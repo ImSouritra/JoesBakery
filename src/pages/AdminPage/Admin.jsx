@@ -1,8 +1,8 @@
 // src/pages/Admin/Admin.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import localforage from "localforage";
-import AddProduct from "./AddProduct/AddProduct"; // <-- path to your AddProduct component
-import { PRODUCTS as STATIC_PRODUCTS } from "../../data/productData"; // adjust path
+import AddProduct from "./AddProduct/AddProduct"; 
+import { PRODUCTS as STATIC_PRODUCTS } from "../../data/productData";
 import "./Admin.css";
 
 /*
@@ -14,7 +14,7 @@ import "./Admin.css";
 
 const EXTRAS_KEY = "extraProductsList";
 
-// create a dedicated extras store
+// local extras store
 const extrasStore = localforage.createInstance({
   name: "joesbakery",
   storeName: "extras",
@@ -33,14 +33,11 @@ async function readExtrasSafe() {
 async function writeExtrasSafe(arr) {
   try {
     await extrasStore.setItem(EXTRAS_KEY, arr);
-    // broadcast change to other tabs
     try {
       const bc = new BroadcastChannel("joesbakery_extras");
       bc.postMessage("changed");
       bc.close();
-    } catch (e) {
-      /* ignore */
-    }
+    } catch {}
     return true;
   } catch (err) {
     console.error("Failed to write extras to IndexedDB:", err);
@@ -56,16 +53,14 @@ function flattenStatic(staticProducts) {
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
-  const [extras, setExtras] = useState([]); // local extras
-  const [serverProducts, setServerProducts] = useState([]); // products from backend
+  const [extras, setExtras] = useState([]);
+  const [serverProducts, setServerProducts] = useState([]);
   const staticArr = flattenStatic(STATIC_PRODUCTS);
 
-  const API =
-    process.env.REACT_APP_API_URL ||
-    process.env.REACT_APP_API_URL_BASE ||
-    "http://localhost:5000";
+  // always use relative API path so it works on Railway and locally with CRA proxy
+  const API_BASE = process.env.REACT_APP_API_URL || "";
+  const API_PREFIX = API_BASE ? API_BASE.replace(/\/$/, "") : "";
 
-  // load extras + server products on mount
   useEffect(() => {
     let cancelled = false;
     async function loadAll() {
@@ -74,7 +69,7 @@ export default function Admin() {
         readExtrasSafe(),
         (async () => {
           try {
-            const r = await fetch(`${API}/api/products`);
+            const r = await fetch(`${API_PREFIX}/api/products`);
             if (!r.ok) return [];
             const body = await r.json();
             return body.products || [];
@@ -91,7 +86,7 @@ export default function Admin() {
     }
     loadAll();
 
-    // BroadcastChannel to receive extras changes from other tabs
+    // BroadcastChannel for extras sync across tabs
     let bc;
     try {
       bc = new BroadcastChannel("joesbakery_extras");
@@ -100,113 +95,95 @@ export default function Admin() {
           readExtrasSafe().then((s) => setExtras(s));
         }
       };
-    } catch (e) {
-      // not available - ignore
-    }
+    } catch {}
 
     return () => {
       cancelled = true;
       try {
         if (bc) bc.close();
-      } catch (e) {}
+      } catch {}
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API]);
+  }, [API_PREFIX]);
 
-  // Called by AddProduct after server returns new product OR when adding local-only
-  const onProductAdd = useCallback(
-    async (newProduct) => {
-      if (!newProduct || !newProduct.name) return { ok: false, reason: "invalid" };
+  const onProductAdd = useCallback(async (newProduct) => {
+    if (!newProduct || !newProduct.name) return { ok: false, reason: "invalid" };
 
-      // If server created product returned with an id, add to serverProducts state
-      if (newProduct.id) {
-        // Prevent duplicate id
-        setServerProducts((prev) => {
-          if (prev.some((p) => p.id === newProduct.id)) return prev;
-          return [newProduct, ...prev];
-        });
+    if (newProduct.id) {
+      setServerProducts((prev) => {
+        if (prev.some((p) => p.id === newProduct.id)) return prev;
+        return [newProduct, ...prev];
+      });
+      return { ok: true, product: newProduct };
+    }
+
+    try {
+      const currentExtras = await readExtrasSafe();
+      const already = currentExtras.some(
+        (p) =>
+          String(p.name || "").trim().toLowerCase() ===
+          String(newProduct.name || "").trim().toLowerCase()
+      );
+      if (already) {
+        setExtras(currentExtras);
+        return { ok: false, reason: "duplicate" };
+      }
+      const updated = [...currentExtras, newProduct];
+      const ok = await writeExtrasSafe(updated);
+      if (ok) {
+        setExtras(updated);
         return { ok: true, product: newProduct };
+      } else {
+        setExtras(updated);
+        return { ok: false, reason: "persist_failed" };
       }
+    } catch (err) {
+      console.error("Add product fallback error:", err);
+      return { ok: false, reason: "error" };
+    }
+  }, []);
 
-      // Otherwise fallback to local extras (existing behaviour)
-      try {
-        const currentExtras = await readExtrasSafe();
-        const already = currentExtras.some(
-          (p) =>
-            String(p.name || "").trim().toLowerCase() ===
-            String(newProduct.name || "").trim().toLowerCase()
-        );
-        if (already) {
-          setExtras(currentExtras);
-          return { ok: false, reason: "duplicate" };
-        }
-        const updated = [...currentExtras, newProduct];
-        const ok = await writeExtrasSafe(updated);
-        if (ok) {
-          setExtras(updated);
-          return { ok: true, product: newProduct };
-        } else {
-          // fallback UI update
-          setExtras(updated);
-          return { ok: false, reason: "persist_failed" };
-        }
-      } catch (err) {
-        console.error("Add product fallback error:", err);
-        return { ok: false, reason: "error" };
-      }
-    },
-    [setServerProducts, setExtras]
-  );
-
-  // Delete server product by id -> calls backend to remove from DB (and storage)
   const onDeleteServerProduct = useCallback(
     async (id, name) => {
       if (!id) return;
-      if (!window.confirm(`Delete product "${name}" (this will remove it from the database)?`)) return;
+      if (!window.confirm(`Delete product "${name}" (from database)?`)) return;
       try {
-        const r = await fetch(`${API}/api/products/${id}`, { method: "DELETE" });
+        const r = await fetch(`${API_PREFIX}/api/products/${id}`, { method: "DELETE" });
         if (!r.ok) {
-          const body = await r.text().catch(() => null);
-          console.error("Delete failed:", r.status, body);
+          console.error("Delete failed:", r.status);
           alert("Failed to delete product (see console).");
           return;
         }
-        // remove from state
         setServerProducts((prev) => prev.filter((p) => p.id !== id));
       } catch (err) {
         console.error("Delete server product error:", err);
         alert("Failed to delete product (see console).");
       }
     },
-    [API]
+    [API_PREFIX]
   );
 
-  // delete an extras item by index (index relative to extras array)
-  const onDeleteExtra = useCallback(
-    async (index) => {
-      const current = await readExtrasSafe();
-      if (!Array.isArray(current) || index < 0 || index >= current.length) {
-        alert("Invalid index");
-        return;
-      }
-      if (!window.confirm(`Delete local product "${current[index].name}"?`)) return;
-      const kept = current.filter((_, i) => i !== index);
-      const ok = await writeExtrasSafe(kept);
-      if (!ok) {
-        alert("Failed to remove item. See console.");
-        return;
-      }
-      setExtras(kept);
-    },
-    [setExtras]
-  );
+  const onDeleteExtra = useCallback(async (index) => {
+    const current = await readExtrasSafe();
+    if (!Array.isArray(current) || index < 0 || index >= current.length) {
+      alert("Invalid index");
+      return;
+    }
+    if (!window.confirm(`Delete local product "${current[index].name}"?`)) return;
+    const kept = current.filter((_, i) => i !== index);
+    const ok = await writeExtrasSafe(kept);
+    if (!ok) {
+      alert("Failed to remove item. See console.");
+      return;
+    }
+    setExtras(kept);
+  }, []);
 
   return (
     <div className="admin-root" style={{ padding: 24 }}>
       <h1>Admin — Add Product</h1>
 
       <div style={{ marginBottom: 12, color: "#666" }}>
-        Note: products created via the backend are saved to the database. Items saved locally are stored in your browser only.
+        Note: database products are saved on the server. Extras are stored only in your browser.
       </div>
 
       <div style={{ marginBottom: 18 }}>
@@ -229,145 +206,27 @@ export default function Admin() {
           >
             {/* static products */}
             {staticArr.map((p, idx) => (
-              <div
-                className="admin-card"
-                key={"static-" + (p.name || idx)}
-                style={{
-                  background: "#fff",
-                  padding: 12,
-                  borderRadius: 10,
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
-                }}
-              >
-                <div
-                  className="admin-img-wrap"
-                  style={{ height: 140, overflow: "hidden", borderRadius: 8 }}
-                >
-                  <img
-                    src={(p.images && p.images[0]) || p.img || "https://via.placeholder.com/300"}
-                    alt={p.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                </div>
-                <div className="admin-body" style={{ marginTop: 10 }}>
-                  <strong>{p.name}</strong>
-                  <div className="muted" style={{ color: "#666", marginTop: 6 }}>
-                    {p.weight}
-                  </div>
-                  <div className="muted" style={{ color: "#666", fontSize: 13 }}>
-                    {Array.isArray(p.type) ? p.type.join(", ") : p.type}
-                  </div>
-                  <div style={{ marginTop: 8, fontSize: 13, color: "#999" }}>Static product</div>
-                </div>
-              </div>
+              <AdminCard key={"static-" + idx} p={p} label="Static product" />
             ))}
 
-            {/* server products (deletable in DB) */}
-            {serverProducts.map((p, i) => (
-              <div
-                className="admin-card"
-                key={(p.name || "") + "-server-" + (p.id || i)}
-                style={{
-                  background: "#fff",
-                  padding: 12,
-                  borderRadius: 10,
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
-                }}
-              >
-                <div
-                  className="admin-img-wrap"
-                  style={{ height: 140, overflow: "hidden", borderRadius: 8 }}
-                >
-                  <img
-                    src={(p.images && p.images[0]) || p.img || "https://via.placeholder.com/300"}
-                    alt={p.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                </div>
-                <div className="admin-body" style={{ marginTop: 10 }}>
-                  <strong>{p.name}</strong>
-                  <div className="muted" style={{ color: "#666", marginTop: 6 }}>
-                    {p.weight}
-                  </div>
-                  <div className="muted" style={{ color: "#666", fontSize: 13 }}>
-                    {Array.isArray(p.type) ? p.type.join(", ") : p.type}
-                  </div>
-
-                  <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                    <button
-                      className="admin-delete"
-                      onClick={() => onDeleteServerProduct(p.id, p.name)}
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        background: "#fff",
-                        border: "1px solid #e6e6e6",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete (DB)
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {/* server products */}
+            {serverProducts.map((p) => (
+              <AdminCard
+                key={"server-" + p.id}
+                p={p}
+                onDelete={() => onDeleteServerProduct(p.id, p.name)}
+                deleteLabel="Delete (DB)"
+              />
             ))}
 
-            {/* extras (editable / deletable) */}
+            {/* local extras */}
             {extras.map((p, i) => (
-              <div
-                className="admin-card"
-                key={(p.name || "") + "-extra-" + i}
-                style={{
-                  background: "#fff",
-                  padding: 12,
-                  borderRadius: 10,
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
-                }}
-              >
-                <div
-                  className="admin-img-wrap"
-                  style={{ height: 140, overflow: "hidden", borderRadius: 8 }}
-                >
-                  <img
-                    src={(p.images && p.images[0]) || p.img || "https://via.placeholder.com/300"}
-                    alt={p.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                </div>
-                <div className="admin-body" style={{ marginTop: 10 }}>
-                  <strong>{p.name}</strong>
-                  <div className="muted" style={{ color: "#666", marginTop: 6 }}>
-                    {p.weight}
-                  </div>
-                  <div className="muted" style={{ color: "#666", fontSize: 13 }}>
-                    {Array.isArray(p.type) ? p.type.join(", ") : p.type}
-                  </div>
-
-                  <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                    <button
-                      className="admin-delete"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Delete product "${p.name}" from extras? This cannot be undone (from UI).`
-                          )
-                        ) {
-                          onDeleteExtra(i);
-                        }
-                      }}
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        background: "#fff",
-                        border: "1px solid #e6e6e6",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete (Local)
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <AdminCard
+                key={"extra-" + i}
+                p={p}
+                onDelete={() => onDeleteExtra(i)}
+                deleteLabel="Delete (Local)"
+              />
             ))}
 
             {serverProducts.length === 0 && extras.length === 0 && staticArr.length === 0 && (
@@ -376,6 +235,55 @@ export default function Admin() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function AdminCard({ p, label, onDelete, deleteLabel }) {
+  return (
+    <div
+      className="admin-card"
+      style={{
+        background: "#fff",
+        padding: 12,
+        borderRadius: 10,
+        boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div className="admin-img-wrap" style={{ height: 140, overflow: "hidden", borderRadius: 8 }}>
+        <img
+          src={(p.images && p.images[0]) || p.img || "https://via.placeholder.com/300"}
+          alt={p.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+      <div className="admin-body" style={{ marginTop: 10 }}>
+        <strong>{p.name}</strong>
+        <div className="muted" style={{ color: "#666", marginTop: 6 }}>
+          {p.weight}
+        </div>
+        <div className="muted" style={{ color: "#666", fontSize: 13 }}>
+          {Array.isArray(p.type) ? p.type.join(", ") : p.type}
+        </div>
+        {label && <div style={{ marginTop: 8, fontSize: 13, color: "#999" }}>{label}</div>}
+        {onDelete && (
+          <div style={{ marginTop: 10 }}>
+            <button
+              className="admin-delete"
+              onClick={onDelete}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: "#fff",
+                border: "1px solid #e6e6e6",
+                cursor: "pointer",
+              }}
+            >
+              {deleteLabel || "Delete"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

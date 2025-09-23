@@ -1,4 +1,4 @@
-// src/App.js (simplified snippet)
+// src/App.js
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./Navbar/NavBar";
@@ -14,13 +14,15 @@ function App() {
 
   async function fetchProducts() {
     try {
-      const API = process.env.REACT_APP_API_URL_BASE || "http://localhost:5000";
-      const res = await fetch(`${API}/api/products`);
-      console.log(res)
+      // ✅ Use relative path in production, env var override allowed for dev
+      const API_BASE = process.env.REACT_APP_API_URL_BASE || "";
+      const res = await fetch(`${API_BASE}/api/products`);
+
       if (!res.ok) {
         console.warn("Failed to fetch products");
         return;
       }
+
       const body = await res.json();
       setProducts(body.products || []);
     } catch (err) {
@@ -32,11 +34,10 @@ function App() {
     fetchProducts();
   }, []);
 
-  // Called by Admin AddProduct after server returns new product
   async function handleProductAdd(createdProduct) {
-    // Option 1: refetch full list:
+    // Best: refetch full list
     await fetchProducts();
-    // Option 2: append client-side (less reliable):
+    // Or just append locally:
     // setProducts((p) => [createdProduct, ...p]);
   }
 
