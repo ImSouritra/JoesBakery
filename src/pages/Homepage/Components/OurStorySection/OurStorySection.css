@@ -1,0 +1,137 @@
+.ourstory-section {
+  width: 80;
+  padding: 3rem 2rem;  /* Reduced vertical padding */
+  background-color: #faf5ec;
+  display: flex;
+  justify-content: center;
+}
+
+.ourstory-container {
+  max-width: 900px;  /* Slightly smaller max width */
+  display: flex;
+  align-items: center;
+  gap: 2rem;         /* Reduced gap */
+  flex-wrap: wrap;
+  animation: fadeInUp 0.9s cubic-bezier(0.38, 1.52, 0.48, 1);
+}
+
+.ourstory-content {
+  flex: 1 1 400px;
+  color: #2c2c2c;
+}
+
+.ourstory-title {
+  font-size: 2.2rem;  /* Smaller font size */
+  margin-bottom: 1rem;
+}
+
+.ourstory-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 90%;
+}
+
+.ourstory-image-wrapper {
+  flex: 1 1 350px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ourstory-image {
+  width: 100%;
+  max-width: 350px;  /* Smaller max width */
+  height: 400px;     /* Explicitly smaller height for compactness */
+  border-radius: 12px;
+  box-shadow: 0px 8px 20px rgba(99, 85, 43, 0.15);
+  object-fit: cover;
+}
+
+@media (max-width: 900px) {
+  .ourstory-container {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .ourstory-content,
+  .ourstory-image-wrapper {
+    flex: 1 1 100%;
+    max-width: 700px;
+  }
+
+  .ourstory-text {
+    max-width: 100%;
+    font-size: 1rem;
+  }
+
+  .ourstory-title {
+    font-size: 1.8rem;
+  }
+
+  .ourstory-image {
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: 14px;
+  }
+}
+@media (max-width: 600px) {
+  .ourstory-section {
+    padding: 2rem 1rem;
+  }
+
+  .ourstory-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 95vw;
+    padding: 0 1rem;
+  }
+
+  .ourstory-content {
+    text-align: center;
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .ourstory-title {
+    font-size: 1.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .ourstory-text {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .ourstory-image-wrapper {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(99, 85, 43, 0.1);
+  }
+
+  .ourstory-image {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+}
+@media (max-width: 400px) {
+  .ourstory-title {
+    font-size: 1.6rem;
+    text-align: center;
+  }
+
+  .ourstory-text {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  .ourstory-section {
+    padding: 2rem 1rem;
+  }
+}

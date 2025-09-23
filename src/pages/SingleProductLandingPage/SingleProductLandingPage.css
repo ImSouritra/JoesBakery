@@ -1,0 +1,31 @@
+/* SingleProductLandingPage.css */
+
+/* Ensure app root fills viewport (add this once globally if not already present) */
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Page wrapper: full viewport, column flex layout */
+  .spp-root {
+    min-height: 100vh;           /* full viewport */
+    display: flex;
+    flex-direction: column;
+    background: #fff;            /* page background (set to match your layout) */
+    box-sizing: border-box;
+  }
+  
+  /* main grows to consume available space so footer sits at bottom */
+  .spp-content {
+    flex: 1 1 auto;
+    /* optional: if you want the MainSection to be vertically aligned */
+    /* display:flex; align-items:flex-start; justify-content:flex-start; */
+  }
+  
+  /* Optional: ensure footer (if present inside this component) has no bottom margin */
+  footer, .site-footer {
+    margin: 0;
+    padding-bottom: 0;
+  }
+  

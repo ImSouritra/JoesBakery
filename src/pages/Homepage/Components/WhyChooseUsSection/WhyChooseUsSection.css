@@ -1,0 +1,61 @@
+.whychoose-section {
+    padding: 3.8rem 0 2.2rem 0;
+    background: #fff;
+    text-align: center;
+  }
+  .whychoose-title span {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 2.7rem;
+    color: #1A1A1A;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 14px #ffe1ad44;
+  }
+  .whychoose-features {
+    margin-top: 2.9rem;
+    display: flex;
+    gap: 3.6rem;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .whychoose-feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 200px;
+    max-width: 250px;
+    padding: 0 0.5rem;
+    transition: transform 0.28s cubic-bezier(.41,1.36,.55,1.19), box-shadow 0.18s;
+    cursor: pointer;
+  }
+  .whychoose-feature:hover {
+    transform: translateY(-7px) scale(1.055) rotate(-2deg);
+    box-shadow: 0 14px 32px #ffd99138;
+  }
+  .whychoose-icon {
+    margin-bottom: 1.2rem;
+    /* Add a soft drop-shadow to the SVG for extra pop */
+    filter: drop-shadow(0 7px 16px #f7d9ad73);
+    border-radius: 50%;
+    transition: filter 0.22s;
+  }
+  .whychoose-label {
+    font-family: 'Montserrat', sans-serif;
+    color: #1A1A1A;
+    font-size: 1.17rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-top: 0.7rem;
+  }
+  
+  /* Responsive */
+  @media (max-width: 900px) {
+    .whychoose-features { gap: 1.1rem; }
+    .whychoose-title span { font-size: 2rem; }
+  }
+  @media (max-width: 650px) {
+    .whychoose-features { flex-direction: column; align-items: center; }
+    .whychoose-feature { margin-bottom: 2rem; min-width: 70vw; }
+  }
+  

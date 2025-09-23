@@ -1,0 +1,82 @@
+/* --- You May Also Like Section --- */
+.youmay-section {
+    width: 100%;
+    background: transparent;
+    padding: 2.4rem 0 3rem;
+    box-sizing: border-box;
+  }
+  
+  .youmay-header {
+    max-width: 2000px;
+    margin: 0 auto 1rem;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  
+  .youmay-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.7rem;
+    margin: 0;
+    color: #111;
+    letter-spacing: 0.4px;
+  }
+  
+  .youmay-controls {
+    display:flex;
+    gap:0.5rem;
+    align-items:center;
+  }
+  
+  /* arrow buttons */
+  .youmay-arrow {
+    width:40px;
+    height:40px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    cursor: pointer;
+    font-size: 1.4rem;
+    display: inline-flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+    padding:0;
+  }
+  .youmay-arrow:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+  .youmay-arrow.left { margin-right: 8px; }
+  .youmay-arrow.right { margin-left: 8px; }
+  
+  /* carousel row re-uses favorites-card styles */
+  .youmay-carousel {
+    max-width: 2000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* keep same card sizing as your favorites list */
+  .youmay-carousel .favorites-card-wrap {
+    flex: 0 0 300px;
+    width: 300px;
+  }
+  
+  /* smaller screens adjust */
+  @media (max-width: 900px) {
+    .youmay-header h3 { font-size: 1.6rem; }
+    .youmay-carousel .favorites-card-wrap { flex: 0 0 240px; width: 240px; }
+  }
+  
+  @media (max-width: 600px) {
+    .youmay-header { padding: 0 1rem; }
+    .youmay-carousel { padding: 0 1rem; gap: 1rem; }
+    .youmay-carousel .favorites-card-wrap { flex: 0 0 60vw; width: 60vw; }
+  }
+  
