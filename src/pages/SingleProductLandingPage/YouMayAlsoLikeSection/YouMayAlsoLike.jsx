@@ -23,7 +23,7 @@ export default function YouMayAlsoLike({
 
   // stable identifier for a product (prefers id, then slug, then slugified name)
   const getProductId = (p) =>
-    p && (p.id ?? p.slug ?? slugify(String(p.name || ""), { lower: true })) || "";
+  p ? (p.id ?? p.slug ?? slugify(String(p.name || ""), { lower: true })) : "";
 
   // pick image key (first image path or fallback image key)
   const getImageKey = (item) => {

@@ -12,7 +12,6 @@ import ProductImage from "../../../components/ProductImage";
 export default function MainSection({ product }) {
   const [selectedImg, setSelectedImg] = useState(0);
   const [openAccordions, setOpenAccordions] = useState({});
-  const [saving, setSaving] = useState(false);
 
   if (!product) return null;
 

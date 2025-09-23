@@ -192,6 +192,55 @@ app.post("/api/products", upload.array("images", 8), async (req, res) => {
   }
 });
 
+// DELETE /api/products/:id
+app.delete("/api/products/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: "Invalid id" });
+
+  try {
+    // fetch image paths for this product
+    const imgs = await query("SELECT id, path FROM product_images WHERE product_id = $1", [id]);
+
+    // attempt to remove from Supabase storage for any images that belong to your bucket
+    if (Array.isArray(imgs.rows) && imgs.rows.length) {
+      for (const row of imgs.rows) {
+        const url = row.path;
+        try {
+          if (url && SUPABASE_URL && SUPABASE_BUCKET && url.includes("/storage/v1/object/public/")) {
+            // supabase public url format:
+            // https://<project>.supabase.co/storage/v1/object/public/<bucket>/<objectPath>
+            const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
+            const idx = url.indexOf(marker);
+            if (idx !== -1) {
+              const objectPath = url.substring(idx + marker.length);
+              const { error: removeErr } = await supabase.storage.from(SUPABASE_BUCKET).remove([objectPath]);
+              if (removeErr) {
+                console.warn("Failed to remove object from Supabase:", objectPath, removeErr);
+              }
+            } else {
+              // url doesn't match expected pattern for our bucket - skip
+            }
+          } else {
+            // not a supabase URL or missing config - skip removal from storage
+          }
+        } catch (err) {
+          console.error("Error removing object from Supabase for product image:", err);
+        }
+      }
+    }
+
+    // delete product row (product_images rows cascade if FK ON DELETE CASCADE)
+    await query("DELETE FROM products WHERE id = $1", [id]);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/products/:id error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
 // GET all products with images
 app.get("/api/products", async (req, res) => {
   try {

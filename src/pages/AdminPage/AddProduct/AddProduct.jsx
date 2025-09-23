@@ -1,6 +1,5 @@
 // src/pages/Admin/AddProduct/AddProduct.jsx
 import React, { useState } from "react";
-import slugify from "slugify";
 import "./AddProduct.css";
 
 const PREDEFINED_TYPES = [
