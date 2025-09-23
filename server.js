@@ -12,22 +12,26 @@ const nodemailer = require("nodemailer");
 
 const PORT = process.env.PORT || 5000;
 
-// ---------- Supabase storage client (server-side service role key) ----------
+/* -------------------- Supabase Storage -------------------- */
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "product-images";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn("Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing. Image upload will not work until set.");
+  console.warn(
+    "⚠️  SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing. Image upload will not work until set."
+  );
 }
-const supabase = createClient(SUPABASE_URL || "", SUPABASE_SERVICE_ROLE_KEY || "");
+const supabase = createClient(
+  SUPABASE_URL || "",
+  SUPABASE_SERVICE_ROLE_KEY || ""
+);
 
-// ---------- Postgres pool (use DATABASE_URL if provided) ----------
+/* -------------------- Postgres Pool -------------------- */
 let poolConfig = {};
 if (process.env.DATABASE_URL) {
   poolConfig.connectionString = process.env.DATABASE_URL;
-  // Cloud Postgres usually requires SSL. For many hosts we need to allow self-signed certs:
-  poolConfig.ssl = { rejectUnauthorized: false };
+  poolConfig.ssl = { rejectUnauthorized: false }; // Railway/Supabase require SSL
 } else {
   poolConfig = {
     host: process.env.PGHOST || "localhost",
@@ -39,41 +43,33 @@ if (process.env.DATABASE_URL) {
 }
 const pool = new Pool(poolConfig);
 
-// ---------- Multer memory storage (no local disk persistence) ----------
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
+/* -------------------- Multer (Memory Storage) -------------------- */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 
-// (Optional) local temp folder for debugging - not used for persistent storage
-const TEMP_UPLOAD_DIR = path.resolve(process.cwd(), "tmp_uploads");
-if (!fs.existsSync(TEMP_UPLOAD_DIR)) fs.mkdirSync(TEMP_UPLOAD_DIR, { recursive: true });
-
+/* -------------------- Express App -------------------- */
 const app = express();
-
-// ---------- CORS ----------
-const corsOrigin = process.env.CORS_ORIGIN || "*";
-app.use(cors({ origin: corsOrigin }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json());
 
-// ---------- Helper: run SQL queries ----------
+/* -------------------- Helper: Query Wrapper -------------------- */
 async function query(sql, params) {
   const client = await pool.connect();
   try {
-    const res = await client.query(sql, params);
-    return res;
+    return await client.query(sql, params);
   } finally {
     client.release();
   }
 }
 
-// Health check
-app.get("/health", (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+/* -------------------- Health Check -------------------- */
+app.get("/health", (req, res) =>
+  res.json({ ok: true, time: new Date().toISOString() })
+);
 
-/*
-  POST /api/products
-  - multipart/form-data with fields:
-    name, isVeg (true/false), weight, type (JSON string or CSV), description, ingredients, delivery_instructions
-    images[] (files, optional)
-    imageUrls (optional) - JSON array of external URLs to save instead of upload
-*/
+/* -------------------- API: Create Product -------------------- */
 app.post("/api/products", upload.array("images", 8), async (req, res) => {
   try {
     const {
@@ -92,209 +88,200 @@ app.post("/api/products", upload.array("images", 8), async (req, res) => {
     const normalizedName = String(name).trim();
     const slug = slugify(normalizedName, { lower: true, strict: true });
 
-    // Duplicate check
-    const dup = await query("SELECT id FROM products WHERE slug = $1 OR lower(name) = lower($2) LIMIT 1", [slug, normalizedName]);
-    if (dup.rowCount > 0) return res.status(409).json({ error: "Product with same name already exists" });
+    // Check duplicates
+    const dup = await query(
+      "SELECT id FROM products WHERE slug = $1 OR lower(name) = lower($2) LIMIT 1",
+      [slug, normalizedName]
+    );
+    if (dup.rowCount > 0) {
+      return res
+        .status(409)
+        .json({ error: "Product with same name already exists" });
+    }
 
-    // Parse type (JSON array or comma-separated)
+    // Parse type
     let typesParsed = [];
     try {
       const t = String(type || "[]");
-      if (t.trim().startsWith("[")) typesParsed = JSON.parse(t);
-      else typesParsed = t.split(",").map((s) => s.trim()).filter(Boolean);
+      typesParsed = t.trim().startsWith("[")
+        ? JSON.parse(t)
+        : t.split(",").map((s) => s.trim()).filter(Boolean);
     } catch {
       typesParsed = [];
     }
 
-    // Insert product (store type as JSONB string)
-    const insertSql = `INSERT INTO products
-      (name, slug, is_veg, weight, type, description, ingredients, delivery_instructions, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW()) RETURNING *`;
-    const insertParams = [
-      normalizedName,
-      slug,
-      (isVeg === "true" || isVeg === true),
-      weight || null,
-      JSON.stringify(typesParsed),
-      description || null,
-      ingredients || null,
-      delivery_instructions || null,
-    ];
-    const insertRes = await query(insertSql, insertParams);
+    // Insert product
+    const insertRes = await query(
+      `INSERT INTO products
+       (name, slug, is_veg, weight, type, description, ingredients, delivery_instructions, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW()) RETURNING *`,
+      [
+        normalizedName,
+        slug,
+        isVeg === "true" || isVeg === true,
+        weight || null,
+        JSON.stringify(typesParsed),
+        description || null,
+        ingredients || null,
+        delivery_instructions || null,
+      ]
+    );
     const product = insertRes.rows[0];
-
-    // Collect image URLs to return
     const images = [];
 
-    // 1) Upload files in memory to Supabase Storage
+    // Upload files to Supabase
     if (Array.isArray(req.files) && req.files.length) {
       for (const file of req.files) {
-        try {
-          // unique path in bucket: product-<id>/<timestamp>-<random><ext>
-          const ext = path.extname(file.originalname) || ".jpg";
-          const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-          const objectPath = `product-${product.id}/${filename}`;
+        const ext = path.extname(file.originalname) || ".jpg";
+        const filename = `${Date.now()}-${Math.round(
+          Math.random() * 1e9
+        )}${ext}`;
+        const objectPath = `product-${product.id}/${filename}`;
 
-          // upload buffer to Supabase storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(SUPABASE_BUCKET)
-            .upload(objectPath, file.buffer, { contentType: file.mimetype });
+        const { error: uploadError } = await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .upload(objectPath, file.buffer, { contentType: file.mimetype });
+        if (uploadError) {
+          console.error("Supabase upload error:", uploadError);
+          continue;
+        }
 
-          if (uploadError) {
-            console.error("Supabase upload error:", uploadError);
-            continue; // skip this file but continue other files
-          }
+        const { data: publicData, error: publicError } = await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .getPublicUrl(objectPath);
 
-          // get public URL (works for public buckets)
-          const { data: publicData, error: publicError } = await supabase.storage
-            .from(SUPABASE_BUCKET)
-            .getPublicUrl(objectPath);
-
-          if (publicError || !publicData || !publicData.publicUrl) {
-            console.error("Supabase getPublicUrl error:", publicError);
-            continue;
-          }
-
-          const publicUrl = publicData.publicUrl;
-
-          // Save image row
-          await query("INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())", [product.id, publicUrl]);
-
-          images.push(publicUrl);
-        } catch (err) {
-          console.error("Error uploading file to Supabase:", err);
+        if (!publicError && publicData?.publicUrl) {
+          await query(
+            "INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())",
+            [product.id, publicData.publicUrl]
+          );
+          images.push(publicData.publicUrl);
         }
       }
     }
 
-    // 2) Optional: client-provided external image URLs in field 'imageUrls' as JSON array
+    // External image URLs
     if (req.body.imageUrls) {
       try {
-        const arr = typeof req.body.imageUrls === "string" ? JSON.parse(req.body.imageUrls) : req.body.imageUrls;
+        const arr =
+          typeof req.body.imageUrls === "string"
+            ? JSON.parse(req.body.imageUrls)
+            : req.body.imageUrls;
         if (Array.isArray(arr)) {
           for (const u of arr) {
-            // Basic validation for url
             if (typeof u !== "string") continue;
-            // insert into DB
-            await query("INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())", [product.id, u]);
+            await query(
+              "INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())",
+              [product.id, u]
+            );
             images.push(u);
           }
         }
-      } catch (e) {
-        // ignore malformed imageUrls
+      } catch {
+        /* ignore */
       }
     }
 
-    return res.status(201).json({ product: { ...product, images } });
+    res.status(201).json({ product: { ...product, images } });
   } catch (err) {
     console.error("POST /api/products error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// DELETE /api/products/:id
+/* -------------------- API: Delete Product -------------------- */
 app.delete("/api/products/:id", async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ error: "Invalid id" });
 
   try {
-    // fetch image paths for this product
-    const imgs = await query("SELECT id, path FROM product_images WHERE product_id = $1", [id]);
-
-    // attempt to remove from Supabase storage for any images that belong to your bucket
-    if (Array.isArray(imgs.rows) && imgs.rows.length) {
-      for (const row of imgs.rows) {
-        const url = row.path;
-        try {
-          if (url && SUPABASE_URL && SUPABASE_BUCKET && url.includes("/storage/v1/object/public/")) {
-            // supabase public url format:
-            // https://<project>.supabase.co/storage/v1/object/public/<bucket>/<objectPath>
-            const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
-            const idx = url.indexOf(marker);
-            if (idx !== -1) {
-              const objectPath = url.substring(idx + marker.length);
-              const { error: removeErr } = await supabase.storage.from(SUPABASE_BUCKET).remove([objectPath]);
-              if (removeErr) {
-                console.warn("Failed to remove object from Supabase:", objectPath, removeErr);
-              }
-            } else {
-              // url doesn't match expected pattern for our bucket - skip
-            }
-          } else {
-            // not a supabase URL or missing config - skip removal from storage
-          }
-        } catch (err) {
-          console.error("Error removing object from Supabase for product image:", err);
+    const imgs = await query(
+      "SELECT path FROM product_images WHERE product_id = $1",
+      [id]
+    );
+    for (const row of imgs.rows) {
+      const url = row.path;
+      if (
+        url &&
+        SUPABASE_URL &&
+        SUPABASE_BUCKET &&
+        url.includes("/storage/v1/object/public/")
+      ) {
+        const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
+        const idx = url.indexOf(marker);
+        if (idx !== -1) {
+          const objectPath = url.substring(idx + marker.length);
+          await supabase.storage.from(SUPABASE_BUCKET).remove([objectPath]);
         }
       }
     }
 
-    // delete product row (product_images rows cascade if FK ON DELETE CASCADE)
     await query("DELETE FROM products WHERE id = $1", [id]);
-
-    return res.json({ ok: true });
+    res.json({ ok: true });
   } catch (err) {
     console.error("DELETE /api/products/:id error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
-
-// GET all products with images
+/* -------------------- API: Get Products -------------------- */
 app.get("/api/products", async (req, res) => {
   try {
-    const pRes = await query("SELECT * FROM products ORDER BY created_at DESC", []);
+    const pRes = await query(
+      "SELECT * FROM products ORDER BY created_at DESC",
+      []
+    );
     const products = pRes.rows || [];
-
     if (!products.length) return res.json({ products: [] });
 
     const ids = products.map((p) => p.id);
-    const imgsRes = await query("SELECT product_id, path FROM product_images WHERE product_id = ANY($1::int[]) ORDER BY id ASC", [ids]);
+    const imgsRes = await query(
+      "SELECT product_id, path FROM product_images WHERE product_id = ANY($1::int[]) ORDER BY id ASC",
+      [ids]
+    );
     const imagesMap = {};
     for (const row of imgsRes.rows) {
       if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
       imagesMap[row.product_id].push(row.path);
     }
 
-    const out = products.map((p) => ({ ...p, images: imagesMap[p.id] || [] }));
-    return res.json({ products: out });
+    const out = products.map((p) => ({
+      ...p,
+      images: imagesMap[p.id] || [],
+    }));
+    res.json({ products: out });
   } catch (err) {
     console.error("GET /api/products err:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET single product by slug
+/* -------------------- API: Get Product by Slug -------------------- */
 app.get("/api/products/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
-    const pRes = await query("SELECT * FROM products WHERE slug = $1 LIMIT 1", [slug]);
-    if (pRes.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    const pRes = await query(
+      "SELECT * FROM products WHERE slug = $1 LIMIT 1",
+      [slug]
+    );
+    if (pRes.rowCount === 0)
+      return res.status(404).json({ error: "Not found" });
     const product = pRes.rows[0];
 
-    const imgsRes = await query("SELECT path FROM product_images WHERE product_id = $1 ORDER BY id ASC", [product.id]);
+    const imgsRes = await query(
+      "SELECT path FROM product_images WHERE product_id = $1 ORDER BY id ASC",
+      [product.id]
+    );
     product.images = imgsRes.rows.map((r) => r.path);
 
-    return res.json({ product });
+    res.json({ product });
   } catch (err) {
     console.error("GET /api/products/:slug", err);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Serve React build in production (if you deploy as one app)
-if (process.env.NODE_ENV === "production") {
-  const clientBuildPath = path.join(__dirname, "build");
-  if (fs.existsSync(clientBuildPath)) {
-    app.use(express.static(clientBuildPath));
-    app.get("/*", (req, res) => {
-      res.sendFile(path.join(clientBuildPath, "index.html"));
-    });
-  }
-}
-
-// Mailer (optional)
+/* -------------------- Mailer -------------------- */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -303,9 +290,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Contact endpoint
 app.post("/api/contact", async (req, res) => {
-  const { name, email, product, quantity, special, message, callMeBack, preferredTime } = req.body;
+  const { name, email, product, quantity, special, message, callMeBack, preferredTime } =
+    req.body;
   if (!email || !name) return res.status(400).json({ message: "Missing required" });
 
   try {
@@ -326,25 +313,27 @@ Message: ${message}
     };
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail(mailOptions);
-    } else {
-      console.log("Skipping email send (SMTP not configured).", mailOptions);
     }
-    return res.json({ ok: true });
+    res.json({ ok: true });
   } catch (err) {
     console.error("Email failed:", err);
-    return res.status(500).json({ ok: false, message: "Email failed" });
+    res.status(500).json({ ok: false, message: "Email failed" });
   }
 });
 
-// Fallback for SPA (if using single deploy)
-const buildPath = path.join(__dirname, "build");
-if (fs.existsSync(buildPath)) {
-  app.use(express.static(buildPath));
-  app.get("/*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
+/* -------------------- Serve React Build (SPA Fallback) -------------------- */
+if (process.env.NODE_ENV === "production") {
+  const clientBuildPath = path.join(__dirname, "build");
+  if (fs.existsSync(clientBuildPath)) {
+    app.use(express.static(clientBuildPath));
+    // Catch-all fallback (Express v5 safe)
+    app.use((req, res) => {
+      res.sendFile(path.join(clientBuildPath, "index.html"));
+    });
+  }
 }
 
+/* -------------------- Start Server -------------------- */
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
