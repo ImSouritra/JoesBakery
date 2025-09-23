@@ -1,60 +1,59 @@
 // server.js
 require("dotenv").config();
+const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const express = require("express");
 const multer = require("multer");
 const { Pool } = require("pg");
 const slugify = require("slugify");
 const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
+const nodemailer = require("nodemailer");
+
 const PORT = process.env.PORT || 5000;
-const nodemailer = require('nodemailer'); // optional if you use emailing
 
-const {
-  PGHOST,
-  PGPORT,
-  PGDATABASE,
-  PGUSER,
-  PGPASSWORD,
-  UPLOAD_DIR = "uploads",
-} = process.env;
+// ---------- Supabase storage client (server-side service role key) ----------
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "product-images";
 
-
-if (!PGHOST || !PGPORT || !PGDATABASE || !PGUSER) {
-  console.warn("Postgres env vars not fully provided. Please create .env with PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD");
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("Warning: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing. Image upload will not work until set.");
 }
+const supabase = createClient(SUPABASE_URL || "", SUPABASE_SERVICE_ROLE_KEY || "");
 
-// Create upload folder if missing
-const uploadDir = path.resolve(process.cwd(), UPLOAD_DIR);
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// ---------- Postgres pool (use DATABASE_URL if provided) ----------
+let poolConfig = {};
+if (process.env.DATABASE_URL) {
+  poolConfig.connectionString = process.env.DATABASE_URL;
+  // Cloud Postgres usually requires SSL. For many hosts we need to allow self-signed certs:
+  poolConfig.ssl = { rejectUnauthorized: false };
+} else {
+  poolConfig = {
+    host: process.env.PGHOST || "localhost",
+    port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
+    database: process.env.PGDATABASE || "joesbakery",
+    user: process.env.PGUSER || "joe",
+    password: process.env.PGPASSWORD || "",
+  };
+}
+const pool = new Pool(poolConfig);
 
-// Configure multer - store files on disk in uploads/
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    // keep original ext, unique name
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+// ---------- Multer memory storage (no local disk persistence) ----------
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
+
+// (Optional) local temp folder for debugging - not used for persistent storage
+const TEMP_UPLOAD_DIR = path.resolve(process.cwd(), "tmp_uploads");
+if (!fs.existsSync(TEMP_UPLOAD_DIR)) fs.mkdirSync(TEMP_UPLOAD_DIR, { recursive: true });
 
 const app = express();
-app.use(cors()); // adjust origin in production
+
+// ---------- CORS ----------
+const corsOrigin = process.env.CORS_ORIGIN || "*";
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
-// Serve uploaded images statically
-app.use("/uploads", express.static(uploadDir));
-// Postgres pool
-const pool = new Pool({
-  host: PGHOST,
-  port: PGPORT,
-  database: PGDATABASE,
-  user: PGUSER,
-  password: PGPASSWORD,
-});
-
-// Simple helper to run queries
+// ---------- Helper: run SQL queries ----------
 async function query(sql, params) {
   const client = await pool.connect();
   try {
@@ -65,17 +64,18 @@ async function query(sql, params) {
   }
 }
 
-/*
-  DB schema (run once) - see below instructions to create these tables.
-  Table structure:
-   - products: id (serial pk), name, slug, is_veg, weight, type jsonb, description, ingredients, delivery_instructions, created_at
-   - product_images: id, product_id (fk), path (string), created_at
-*/
+// Health check
+app.get("/health", (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-// Create product (multipart/form-data with files)
+/*
+  POST /api/products
+  - multipart/form-data with fields:
+    name, isVeg (true/false), weight, type (JSON string or CSV), description, ingredients, delivery_instructions
+    images[] (files, optional)
+    imageUrls (optional) - JSON array of external URLs to save instead of upload
+*/
 app.post("/api/products", upload.array("images", 8), async (req, res) => {
   try {
-    // Fields are expected in body (as text fields). types is JSON-encoded array or comma-separated.
     const {
       name,
       isVeg = "false",
@@ -86,55 +86,105 @@ app.post("/api/products", upload.array("images", 8), async (req, res) => {
       delivery_instructions = "",
     } = req.body;
 
-    if (!name || !name.trim()) {
+    if (!name || !String(name).trim()) {
       return res.status(400).json({ error: "Missing product name" });
     }
     const normalizedName = String(name).trim();
     const slug = slugify(normalizedName, { lower: true, strict: true });
 
-    // Check duplicate by slug or name (case-insensitive)
-    const dupCheck = await query(
-      "SELECT id FROM products WHERE slug = $1 OR lower(name) = lower($2) LIMIT 1",
-      [slug, normalizedName]
-    );
-    if (dupCheck.rowCount > 0) {
-      return res.status(409).json({ error: "Product with same name already exists" });
-    }
+    // Duplicate check
+    const dup = await query("SELECT id FROM products WHERE slug = $1 OR lower(name) = lower($2) LIMIT 1", [slug, normalizedName]);
+    if (dup.rowCount > 0) return res.status(409).json({ error: "Product with same name already exists" });
 
-    // Parse types
+    // Parse type (JSON array or comma-separated)
     let typesParsed = [];
     try {
-      // client may send JSON string or comma separated
-      const t = String(type);
+      const t = String(type || "[]");
       if (t.trim().startsWith("[")) typesParsed = JSON.parse(t);
       else typesParsed = t.split(",").map((s) => s.trim()).filter(Boolean);
     } catch {
       typesParsed = [];
     }
 
-    // Insert product
-    const insertProduct = await query(
-    `INSERT INTO products (name, slug, is_veg, weight, type, description, ingredients, delivery_instructions, created_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW()) RETURNING *`,
-      [normalizedName, slug, isVeg === "true" || isVeg === true, weight || "", JSON.stringify(typesParsed), description || "", ingredients || "", delivery_instructions || ""]
-    );
-    const product = insertProduct.rows[0];
+    // Insert product (store type as JSONB string)
+    const insertSql = `INSERT INTO products
+      (name, slug, is_veg, weight, type, description, ingredients, delivery_instructions, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW()) RETURNING *`;
+    const insertParams = [
+      normalizedName,
+      slug,
+      (isVeg === "true" || isVeg === true),
+      weight || null,
+      JSON.stringify(typesParsed),
+      description || null,
+      ingredients || null,
+      delivery_instructions || null,
+    ];
+    const insertRes = await query(insertSql, insertParams);
+    const product = insertRes.rows[0];
 
-    // Save images records. uploaded files are in req.files
+    // Collect image URLs to return
     const images = [];
+
+    // 1) Upload files in memory to Supabase Storage
     if (Array.isArray(req.files) && req.files.length) {
-      for (const f of req.files) {
-        // store relative path for serving: /uploads/<filename>
-        const relPath = `/uploads/${path.basename(f.path)}`;
-        await query(
-          `INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())`,
-          [product.id, relPath]
-        );
-        images.push(relPath);
+      for (const file of req.files) {
+        try {
+          // unique path in bucket: product-<id>/<timestamp>-<random><ext>
+          const ext = path.extname(file.originalname) || ".jpg";
+          const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+          const objectPath = `product-${product.id}/${filename}`;
+
+          // upload buffer to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(SUPABASE_BUCKET)
+            .upload(objectPath, file.buffer, { contentType: file.mimetype });
+
+          if (uploadError) {
+            console.error("Supabase upload error:", uploadError);
+            continue; // skip this file but continue other files
+          }
+
+          // get public URL (works for public buckets)
+          const { data: publicData, error: publicError } = await supabase.storage
+            .from(SUPABASE_BUCKET)
+            .getPublicUrl(objectPath);
+
+          if (publicError || !publicData || !publicData.publicUrl) {
+            console.error("Supabase getPublicUrl error:", publicError);
+            continue;
+          }
+
+          const publicUrl = publicData.publicUrl;
+
+          // Save image row
+          await query("INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())", [product.id, publicUrl]);
+
+          images.push(publicUrl);
+        } catch (err) {
+          console.error("Error uploading file to Supabase:", err);
+        }
       }
     }
 
-    // Return created product merged with images
+    // 2) Optional: client-provided external image URLs in field 'imageUrls' as JSON array
+    if (req.body.imageUrls) {
+      try {
+        const arr = typeof req.body.imageUrls === "string" ? JSON.parse(req.body.imageUrls) : req.body.imageUrls;
+        if (Array.isArray(arr)) {
+          for (const u of arr) {
+            // Basic validation for url
+            if (typeof u !== "string") continue;
+            // insert into DB
+            await query("INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())", [product.id, u]);
+            images.push(u);
+          }
+        }
+      } catch (e) {
+        // ignore malformed imageUrls
+      }
+    }
+
     return res.status(201).json({ product: { ...product, images } });
   } catch (err) {
     console.error("POST /api/products error:", err);
@@ -146,79 +196,67 @@ app.post("/api/products", upload.array("images", 8), async (req, res) => {
 app.get("/api/products", async (req, res) => {
   try {
     const pRes = await query("SELECT * FROM products ORDER BY created_at DESC", []);
-    const products = pRes.rows;
+    const products = pRes.rows || [];
 
-    // get images for each product in one batch
+    if (!products.length) return res.json({ products: [] });
+
     const ids = products.map((p) => p.id);
-    if (ids.length === 0) return res.json({ products: [] });
-
-    const imgsRes = await query(
-      `SELECT product_id, path FROM product_images WHERE product_id = ANY($1::int[]) ORDER BY id ASC`,
-      [ids]
-    );
-
+    const imgsRes = await query("SELECT product_id, path FROM product_images WHERE product_id = ANY($1::int[]) ORDER BY id ASC", [ids]);
     const imagesMap = {};
     for (const row of imgsRes.rows) {
       if (!imagesMap[row.product_id]) imagesMap[row.product_id] = [];
       imagesMap[row.product_id].push(row.path);
     }
 
-    const out = products.map((p) => ({
-      ...p,
-      images: imagesMap[p.id] || [],
-    }));
-
-    res.json({ products: out });
+    const out = products.map((p) => ({ ...p, images: imagesMap[p.id] || [] }));
+    return res.json({ products: out });
   } catch (err) {
     console.error("GET /api/products err:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET one product by slug
+// GET single product by slug
 app.get("/api/products/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
     const pRes = await query("SELECT * FROM products WHERE slug = $1 LIMIT 1", [slug]);
     if (pRes.rowCount === 0) return res.status(404).json({ error: "Not found" });
     const product = pRes.rows[0];
+
     const imgsRes = await query("SELECT path FROM product_images WHERE product_id = $1 ORDER BY id ASC", [product.id]);
     product.images = imgsRes.rows.map((r) => r.path);
-    res.json({ product });
+
+    return res.json({ product });
   } catch (err) {
     console.error("GET /api/products/:slug", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Serve the react build in production (if you build client into ../build)
+// Serve React build in production (if you deploy as one app)
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "build");
   if (fs.existsSync(clientBuildPath)) {
     app.use(express.static(clientBuildPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(clientBuildPath, "index.html"));
-    });
+    app.get("*", (req, res) => res.sendFile(path.join(clientBuildPath, "index.html")));
   }
 }
 
-
-// Example mail transporter (use env vars)
+// Mailer (optional)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-// Example API endpoint
-app.post('/api/contact', async (req, res) => {
+// Contact endpoint
+app.post("/api/contact", async (req, res) => {
   const { name, email, product, quantity, special, message, callMeBack, preferredTime } = req.body;
-  // Validate lightly
-  if (!email || !name) return res.status(400).json({ message: 'Missing required' });
+  if (!email || !name) return res.status(400).json({ message: "Missing required" });
 
-  // send email (or persist, etc.)
   try {
     const mailOptions = {
       from: email,
@@ -235,30 +273,25 @@ Special: ${special}
 Message: ${message}
       `,
     };
-    // Only attempt send if transporter configured
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail(mailOptions);
     } else {
-      console.log('Skipping email send (SMTP not configured).', mailOptions);
+      console.log("Skipping email send (SMTP not configured).", mailOptions);
     }
     return res.json({ ok: true });
   } catch (err) {
-    console.error('Email failed:', err);
-    return res.status(500).json({ ok: false, message: 'Email failed' });
+    console.error("Email failed:", err);
+    return res.status(500).json({ ok: false, message: "Email failed" });
   }
 });
 
-/* ---------- Serve React build in production ---------- */
-// Serve static files from the React app (build folder)
-const buildPath = path.join(__dirname, 'build');
-app.use(express.static(buildPath));
-
-// For all other routes, serve index.html (so react-router handles client routing)
-app.use((req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
- });
-
+// Fallback for SPA (if using single deploy)
+const buildPath = path.join(__dirname, "build");
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+  app.use((req, res) => res.sendFile(path.join(buildPath, "index.html")));
+}
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
