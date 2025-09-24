@@ -1,115 +1,142 @@
+/* TasteMasterPieceSection.css */
 .tms-section {
-    position: relative;
-    width: 100vw;
-    height: 700px;
-    background: url('../../../../assets/images/lightcake.png') center right/cover no-repeat;
-    overflow: hidden;
-    font-family: 'Georgia', serif;
-    display: flex;
-    align-items: center;
-    background-attachment: fixed;
+  position: relative;
+  width: 100%;
+  height: 700px;
+  overflow: hidden;
+  font-family: 'Georgia', serif;
+  display: flex;
+  align-items: center;
+  /* quick paint fallback color while image loads */
+  background-color: #fbf7f4;
+}
+
+/* background image as absolute <img> (lazy-loadable) */
+.tms-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+  transform-origin: center;
+  transition: opacity 400ms ease, transform 800ms ease;
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+  /* small gentle scale while loading to avoid jank */
+  transform: scale(1.02);
+}
+
+/* visible once loaded */
+.tms-bg.is-loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* overlay sits above the image, use if you want a subtle shade */
+.tms-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* optional subtle tint for text legibility */
+  background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.65) 40%, rgba(255,255,255,0.35) 100%);
+  pointer-events: none;
+}
+
+/* content sits on top */
+.tms-content {
+  position: relative;
+  z-index: 2;
+  margin-left: 8vw;
+  max-width: 420px;
+  color: #201a17;
+  text-align: left;
+}
+
+/* Heading & text */
+.tms-content h1 {
+  font-weight: 800;
+  font-size: 2.8rem;
+  margin: 0 0 0.3rem 0;
+  line-height: 1.1;
+  letter-spacing: 1.2px;
+}
+
+.tms-content .subtitle {
+  font-weight: 700;
+  font-style: italic;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #5a4a41;
+}
+
+.tms-content .description {
+  font-size: 1rem;
+  color: #5a4a41;
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+/* Button */
+.tms-button {
+  border: 2px solid #201a17;
+  background: transparent;
+  color: #201a17;
+  padding: 0.7rem 1.7rem;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 140ms ease;
+}
+
+.tms-button:hover,
+.tms-button:focus {
+  background-color: #201a17;
+  color: #fef9f3;
+  outline: none;
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 1s ease forwards; }
+.slide-in { animation: slideIn 1.2s ease forwards; }
+.fade-up { animation: fadeUp 1.4s ease forwards; }
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .tms-section { height: 620px; }
+  .tms-content { max-width: 380px; margin-left: 6vw; }
+  .tms-content h1 { font-size: 2.4rem; }
+}
+
+@media (max-width: 650px) {
+  .tms-section {
+    height: auto;
+    background-position: center center; /* not used for img but safe fallback */
+    padding: 3rem 6vw;
   }
-  
-  .tms-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-  
   .tms-content {
-    position: relative;
-    z-index: 2;
-    margin-left: 8vw;
-    max-width: 400px;
-    color: #201a17;
-    text-align: left;
+    margin-left: 0;
+    max-width: 100%;
   }
-  
-  /* Text styling */
-  .tms-content h1 {
-    font-weight: 800;
-    font-size: 2.8rem;
-    margin: 0 0 0.3rem 0;
-    line-height: 1.1;
-    letter-spacing: 1.2px;
-  }
-  
-  .tms-content .subtitle {
-    font-weight: 700;
-    font-style: italic;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: #5a4a41;
-  }
-  
-  .tms-content .description {
-    font-size: 1rem;
-    color: #5a4a41;
-    line-height: 1.5;
-    margin-bottom: 1.75rem;
-  }
-  
-  /* Button */
-  .tms-button {
-    border: 2px solid #201a17;
-    background: transparent;
-    color: #201a17;
-    padding: 0.7rem 1.7rem;
-    font-weight: 700;
-    font-size: 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
-  }
-  
-  .tms-button:hover,
-  .tms-button:focus {
-    background-color: #201a17;
-    color: #fef9f3;
-    outline: none;
-  }
-  
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-40px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .fade-in {
-    animation: fadeIn 1s ease forwards;
-  }
-  
-  .slide-in {
-    animation: slideIn 1.2s ease forwards;
-  }
-  
-  .fade-up {
-    animation: fadeUp 1.4s ease forwards;
-  }
-  
-  /* Responsive for smaller devices */
-  @media (max-width: 650px) {
-    .tms-section {
-      height: auto;
-      background-position: center center;
-      padding: 3rem 6vw;
-    }
-    .tms-content {
-      margin-left: 0;
-      max-width: 100%;
-    }
-    .tms-content h1 {
-      font-size: 2rem;
-    }
-  }
-  
+  .tms-content h1 { font-size: 2rem; }
+  .tms-bg { object-position: center; } /* center crop on mobile */
+}

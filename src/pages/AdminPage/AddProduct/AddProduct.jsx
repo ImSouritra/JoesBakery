@@ -39,6 +39,7 @@ export default function AddProduct({ onProductAdd }) {
       };
       reader.readAsDataURL(file);
     });
+    // clear input so same file can be selected again if needed
     e.target.value = "";
   }
 
@@ -50,6 +51,7 @@ export default function AddProduct({ onProductAdd }) {
 
   function removePreviewAt(i) {
     setPreviewUrls((p) => p.filter((_, idx) => idx !== i));
+    // if you want to remove a file too, more logic needed to match preview->file
   }
 
   async function handleSubmit(e) {
@@ -139,30 +141,35 @@ export default function AddProduct({ onProductAdd }) {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
+            placeholder="E.g. Classic Chocolate Cake"
           />
         </label>
 
-        <label className="inline-checkbox">
-          <input
-            type="checkbox"
-            checked={form.isVeg}
-            onChange={(e) => setForm({ ...form, isVeg: e.target.checked })}
-          />
-          Vegetarian
-        </label>
+        <div className="row two-col">
+          <label className="inline-checkbox">
+            <div style={{display:'flex',flexDirection:'row',alignItems:'center',gap:8}}>
+              <input
+                type="checkbox"
+                checked={form.isVeg}
+                onChange={(e) => setForm({ ...form, isVeg: e.target.checked })}
+              />
+              <span>Vegetarian</span>
+            </div>
+          </label>
 
-        <label>
-          Weight
-          <input
-            value={form.weight}
-            onChange={(e) => setForm({ ...form, weight: e.target.value })}
-            placeholder="500 GM"
-          />
-        </label>
+          <label>
+            Weight
+            <input
+              value={form.weight}
+              onChange={(e) => setForm({ ...form, weight: e.target.value })}
+              placeholder="500 GM"
+            />
+          </label>
+        </div>
 
         <label>
           Categories / Types
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          <div className="types-row">
             {PREDEFINED_TYPES.map((t) => {
               const active = form.type.includes(t);
               return (
@@ -170,16 +177,7 @@ export default function AddProduct({ onProductAdd }) {
                   key={t}
                   type="button"
                   onClick={() => toggleType(t)}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    border: active ? "1px solid #111" : "1px solid #eee",
-                    background: active ? "#111" : "#fff",
-                    color: active ? "#fff" : "#111",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    textTransform: "capitalize",
-                  }}
+                  className={`type-pill ${active ? "active" : ""}`}
                 >
                   {t}
                 </button>
@@ -193,6 +191,7 @@ export default function AddProduct({ onProductAdd }) {
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Write a short description..."
           />
         </label>
 
@@ -201,6 +200,7 @@ export default function AddProduct({ onProductAdd }) {
           <textarea
             value={form.ingredients}
             onChange={(e) => setForm({ ...form, ingredients: e.target.value })}
+            placeholder="List key ingredients..."
           />
         </label>
 
@@ -211,55 +211,47 @@ export default function AddProduct({ onProductAdd }) {
             onChange={(e) =>
               setForm({ ...form, delivery_instructions: e.target.value })
             }
+            placeholder="Any special delivery notes..."
           />
         </label>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginTop: 8 }}>
-          <label style={{ flex: 1 }}>
-            Upload images
-            <input type="file" accept="image/*" multiple onChange={onFilesChange} />
-          </label>
+        <div className="image-upload-row">
+          <div className="file-upload">
+            <label>
+              Upload images
+              <input type="file" accept="image/*" multiple onChange={onFilesChange} />
+            </label>
+          </div>
 
-          <label style={{ width: 320 }}>
-            Add image by URL
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://..."
-              />
-              <button type="button" onClick={addUrlImage}>
-                Add
-              </button>
-            </div>
-          </label>
+          <div className="url-upload">
+            <label>
+              Add image by URL
+              <div style={{display:"flex", gap:8, marginTop:8}}>
+                <input
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
+                <button type="button" className="btn-small" onClick={addUrlImage}>
+                  Add
+                </button>
+              </div>
+            </label>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+        <div className="image-preview">
           {previewUrls.length === 0 ? (
-            <div style={{ color: "#777" }}>No previews</div>
+            <div className="muted">No previews</div>
           ) : (
             previewUrls.map((u, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 110,
-                  height: 110,
-                  overflow: "hidden",
-                  position: "relative",
-                  borderRadius: 8,
-                  boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
-                }}
-              >
-                <img
-                  src={u}
-                  alt={"preview-" + i}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+              <div className="thumb" key={i}>
+                <img src={u} alt={"preview-" + i} />
                 <button
                   type="button"
+                  className="thumb-remove"
+                  aria-label={`Remove preview ${i + 1}`}
                   onClick={() => removePreviewAt(i)}
-                  style={{ position: "absolute", right: 6, top: 6 }}
                 >
                   ✕
                 </button>
@@ -268,8 +260,27 @@ export default function AddProduct({ onProductAdd }) {
           )}
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <button type="submit" disabled={saving}>
+        <div className="form-actions">
+          <button type="button" className="btn-secondary" onClick={() => {
+            // reset local form only
+            if (window.confirm("Reset form?")) {
+              setForm({
+                name: "",
+                isVeg: true,
+                weight: "",
+                type: [],
+                description: "",
+                ingredients: "",
+                delivery_instructions: "",
+              });
+              setFiles([]);
+              setPreviewUrls([]);
+            }
+          }}>
+            Reset
+          </button>
+
+          <button type="submit" className="submit-btn" disabled={saving}>
             {saving ? "Saving..." : "Save product"}
           </button>
         </div>

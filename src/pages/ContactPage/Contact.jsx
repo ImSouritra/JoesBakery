@@ -9,15 +9,16 @@ export default function Contact({ products = [] } = {}) {
 
   // Build productOptions (array of product names) and a slug->name map
   const { productOptions, slugToName } = useMemo(() => {
-    const opts = Array.isArray(products) && products.length
-      ? products.map((p) => p.name)
-      : [
-          "New York Cheesecake",
-          "Dessert Chocolate Fudge",
-          "Millet Cookie",
-          "Chocolate Muffin",
-          "Vanilla Teacake",
-        ];
+    const opts =
+      Array.isArray(products) && products.length
+        ? products.map((p) => p.name)
+        : [
+            "New York Cheesecake",
+            "Dessert Chocolate Fudge",
+            "Millet Cookie",
+            "Chocolate Muffin",
+            "Vanilla Teacake",
+          ];
 
     const map = {};
     opts.forEach((name) => {
@@ -48,19 +49,17 @@ export default function Contact({ products = [] } = {}) {
     const productSlug = (searchParams.get("product") || "").toString();
     const qtyStr = searchParams.get("qty") || searchParams.get("quantity") || searchParams.get("q");
 
-    // Decide product selection:
     if (productSlug) {
       const matchedName = slugToName[productSlug.toLowerCase()];
       if (matchedName) {
         setForm((f) => ({ ...f, product: matchedName }));
       } else {
-        // fallback: try fuzzy match by slugifying each option (extra safety)
+        // fallback fuzzy
         const fuzzy = Object.keys(slugToName).find((s) => s === productSlug.toLowerCase());
         if (fuzzy) setForm((f) => ({ ...f, product: slugToName[fuzzy] }));
       }
     }
 
-    // Quantity
     if (qtyStr) {
       const n = parseInt(qtyStr, 10);
       if (!Number.isNaN(n) && n > 0) {
@@ -68,7 +67,7 @@ export default function Contact({ products = [] } = {}) {
       }
     }
 
-    // If no product selected yet, set to first available product option
+    // If no product selected yet, set to first available product option (defer to next tick)
     setTimeout(() => {
       setForm((f) => ({ ...f, product: f.product || (productOptions.length ? productOptions[0] : "") }));
     }, 0);
@@ -84,6 +83,11 @@ export default function Contact({ products = [] } = {}) {
     setErrors(e);
     return Object.keys(e).length === 0;
   }
+
+  // Helper: compute API base
+  // In dev: set REACT_APP_API_URL_BASE="http://localhost:5000"
+  // In production: set to your deployed server domain, or leave "" to use relative paths
+  const API_BASE = (process.env.REACT_APP_API_URL_BASE || "").replace(/\/+$/, "");
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -106,15 +110,29 @@ export default function Contact({ products = [] } = {}) {
 
     setSending(true);
     try {
-      const res = await fetch("http://localhost:5000/api/contact", {
+      // build url safe
+      const url = `${API_BASE || ""}/api/contact`.replace(/([^:]\/)\/+/g, "$1");
+
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
+      // If server returned a non-JSON (e.g. HTML error page), handle gracefully
+      const contentType = res.headers.get("content-type") || "";
+      let body = null;
+      if (contentType.includes("application/json")) {
+        body = await res.json().catch(() => ({}));
+      } else {
+        // try text (may be HTML error page)
+        body = await res.text().catch(() => null);
+      }
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || "Server error");
+        // Prefer server message if present
+        const message = body && body.message ? body.message : (typeof body === "string" ? body : `Error ${res.status}`);
+        throw new Error(message || "Server error");
       }
 
       setSuccessMessage("Thanks — your request has been sent. We'll contact you soon.");
@@ -132,8 +150,16 @@ export default function Contact({ products = [] } = {}) {
       setTimeout(() => setSuccessMessage(""), 6000);
     } catch (err) {
       console.error("Send failed:", err);
-      setServerError("Failed to send message. Please try again or email us directly at abhiraajsamajdar@gmail.com");
-      setTimeout(() => setServerError(""), 6000);
+      // If the server responded with HTML (error page), show friendly hint
+      const friendly =
+        typeof err.message === "string" && err.message.trim().startsWith("<")
+          ? "Server returned an unexpected error (HTML). Check server logs."
+          : err.message || "Failed to send message";
+
+      setServerError(
+        `${friendly}. If the issue persists, email us at abhiraajsamajdar@gmail.com`
+      );
+      setTimeout(() => setServerError(""), 8000);
     } finally {
       setSending(false);
     }
