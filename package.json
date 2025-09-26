@@ -35,6 +35,7 @@
     "start:prod": "cross-env NODE_ENV=production node server.js",
 
     "build:client": "react-scripts build",
+    "build": "npm run build:client",
     "start:fullstack": "npm run build:client && node server.js",
 
     "start-server": "nodemon server.js",
