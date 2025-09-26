@@ -1,9 +1,9 @@
 // productData.js
 import cheesecake from "../assets/images/birthday_cake.JPG";
-import chocolateFudgeBrownie from "../assets/images/brownie.jpg";
-import cookies from "../assets/images/cookies.jpg";
+import chocolateFudgeBrownie from "../assets/images/brownie.webp";
+import cookies from "../assets/images/cookies.webp";
 import muffin from "../assets/images/muffin.JPG";
-import teacake from "../assets/images/teacake.jpg";
+import teacake from "../assets/images/teacake.webp";
 
 export const TABS = [
   { label: "Classic Picks", key: "classic" },

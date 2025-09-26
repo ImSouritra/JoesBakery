@@ -3,11 +3,13 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./Navbar/NavBar";
 import Footer from "./Footer/Footer";
+
 import HomePage from "./pages/Homepage/HomePage";
 import SingleProductLandingPage from "./pages/SingleProductLandingPage/SingleProductLandingPage";
 import CategoryLandingPage from "./pages/CategoryLandingPage/CategoryLandingPage";
 import Admin from "./pages/AdminPage/Admin";
 import Contact from "./pages/ContactPage/Contact";
+import BestSellersPage from "./pages/BestSellersPage/BestSellersPage";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -53,6 +55,7 @@ function App() {
           <Route path="/category" element={<Navigate to="/category/all" replace />} />
           <Route path="/admin/add-product" element={<Admin onProductAdd={handleProductAdd} />} />
           <Route path="/contact" element={<Contact products={products} />} />
+          <Route path="/best-sellers" element={<BestSellersPage products={products} />} />
         </Routes>
         <Footer />
       </Router>

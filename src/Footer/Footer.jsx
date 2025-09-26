@@ -16,7 +16,7 @@ const quickLinks = [
   { label: "Muffins", href: "/category/muffin" },
   { label: "Cookies", href: "/category/cookie" },
   { label: "Teacakes", href: "/category/teacake" },
-  { label: "Best Sellers", href: "/best_sellers" },
+  { label: "Best Sellers", href: "/best-sellers" },
   { label: "Contact Us", href: "/contact" },
 ];
 

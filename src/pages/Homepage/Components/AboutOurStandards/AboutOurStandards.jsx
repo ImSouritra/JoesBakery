@@ -1,8 +1,8 @@
 import React from "react";
 import "./AboutOurStandards.css";
-import artisanalImg from "../../../../assets/images/cake_baker.png"; // kneading dough
-import traditionalImg from "../../../../assets/images/cake_maker.png"; // loaf of bread
-import joyfulImg from "../../../../assets/images/chocolate_image.png"; // decorated cake
+import artisanalImg from "../../../../assets/images/cake_baker.webp"; // kneading dough
+import traditionalImg from "../../../../assets/images/cake_maker.webp"; // loaf of bread
+import joyfulImg from "../../../../assets/images/chocolate_image.webp"; // decorated cake
 import  ArtisanalIcon from "../../../../assets/images/ArtisanalIcon.png";
 import TraditionalIcon  from "../../../../assets/images/TraditionalIcon.png";
 import JoyfulIcon from "../../../../assets/images/cake.png";

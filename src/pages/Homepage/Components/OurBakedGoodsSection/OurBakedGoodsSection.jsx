@@ -4,9 +4,9 @@ import { Link } from "react-router-dom";
 import "./OurBakedGoodsSection.css";
 import cakeImg from "../../../../assets/images/birthday_cake.JPG";
 import muffin from "../../../../assets/images/muffin.JPG";
-import cookies from "../../../../assets/images/cookies.jpg";
-import brownie from "../../../../assets/images/brownie.jpg";
-import teacake from "../../../../assets/images/teacake.jpg";
+import cookies from "../../../../assets/images/cookies.webp";
+import brownie from "../../../../assets/images/brownie.webp";
+import teacake from "../../../../assets/images/teacake.webp";
 
 // IMPORTANT: typeKey should match the type strings in your PRODUCTS array
 const bakedGoods = [
