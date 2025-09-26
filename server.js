@@ -51,8 +51,72 @@ const upload = multer({
 
 /* -------------------- Express App -------------------- */
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+
+/* -------------------- Dynamic CORS Configuration -------------------- */
+// Supports:
+// - CORS_ORIGIN unset => allow all (*)
+// - Single origin value
+// - Comma separated list of origins
+// - Trailing slash normalization
+// - Wildcard "*" inside the list means allow all
+// - Optional CORS_LOG=true to log decisions
+function buildAllowedOrigins(raw) {
+  if (!raw || raw.trim() === "") return ["*"]; // allow all
+  // split by comma, trim, drop empties
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return ["*"];
+  return parts.map(normalizeOrigin);
+}
+
+function normalizeOrigin(origin) {
+  if (!origin) return origin;
+  try {
+    // If it's just '*', keep as is
+    if (origin === "*") return origin;
+    // Remove trailing slash (except protocol-only like "http://localhost:3000/")
+    return origin.replace(/\/$/, "");
+  } catch {
+    return origin;
+  }
+}
+
+const allowedOrigins = buildAllowedOrigins(process.env.CORS_ORIGIN || "");
+const allowAll = allowedOrigins.includes("*");
+const logCors = /^true$/i.test(process.env.CORS_LOG || "");
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Some user agents (e.g., curl, same-origin) may have no origin header
+    if (!origin) {
+      if (logCors) console.log("[CORS] No Origin header -> allowed (non-browser or same-origin)");
+      return callback(null, true);
+    }
+    const normalized = normalizeOrigin(origin);
+    if (allowAll) {
+      if (logCors) console.log(`[CORS] * matches ${normalized}`);
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(normalized)) {
+      if (logCors) console.log(`[CORS] Allowed ${normalized}`);
+      return callback(null, true);
+    }
+    if (logCors) {
+      console.warn(`[CORS] Blocked origin: ${normalized}. Allowed: ${allowedOrigins.join(", ")}`);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: false, // adjust to true if you later use cookies/auth
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+if (logCors) {
+  console.log("[CORS] Allowed origins:", allowAll ? "* (all)" : allowedOrigins);
+}
 
 /* -------------------- Helper: Query Wrapper -------------------- */
 async function query(sql, params) {
