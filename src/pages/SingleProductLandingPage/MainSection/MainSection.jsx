@@ -1,4 +1,3 @@
-// MainSection.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import slugify from "slugify";
@@ -7,8 +6,7 @@ import ProductImage from "../../../components/ProductImage";
 export default function MainSection({ product }) {
   const [selectedImg, setSelectedImg] = useState(0);
   const [openAccordions, setOpenAccordions] = useState({});
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
+
 
   if (!product) return null;
 
@@ -23,42 +21,6 @@ export default function MainSection({ product }) {
 
   const productSlug = slugify(product.name || "product", { lower: true });
 
-  // Mobile slider functions
-  const nextImage = () => {
-    setSelectedImg((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setSelectedImg((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  // Touch handling for mobile slider
-  const handleTouchStart = (e) => {
-    setIsDragging(true);
-    setStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    
-    const endX = e.changedTouches[0].clientX;
-    const diffX = startX - endX;
-    
-    // Minimum swipe distance
-    if (Math.abs(diffX) > 50) {
-      if (diffX > 0) {
-        nextImage();
-      } else {
-        prevImage();
-      }
-    }
-  };
 
   return (
     <div className="pf-hero-root">
@@ -185,7 +147,6 @@ export default function MainSection({ product }) {
           gap: 8px;
           margin-top: 10px;
           scrollbar-width: none;
-          -ms-overflow-style: none;
         }
 
         .mobile-thumbs::-webkit-scrollbar {
@@ -263,10 +224,36 @@ export default function MainSection({ product }) {
           .pf-thumbs { display: none; }
           .pf-mainimg { display: none; }
           
-          /* Show mobile slider */
-          .mobile-slider { display: block; }
-          .mobile-thumbs { display: flex; }
-          
+          /* Hide slider and dots navigation */
+          .mobile-slider,
+          .slider-dots,
+          .slider-nav {
+            display: none !important;
+          }
+
+          /* Show custom mobile image section */
+          .mobile-image-section {
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+          }
+          .mobile-mainimg {
+            margin-bottom: 16px;
+          }
+          .mobile-thumb-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+          }
+          .mobile-thumb-row::-webkit-scrollbar {
+            display: none;
+          }
+
           .pf-title { font-size: 1.9rem; }
         }
 
@@ -287,6 +274,10 @@ export default function MainSection({ product }) {
           .slider-nav.next {
             right: 8px;
           }
+        }
+
+        @media (min-width: 981px) {
+          .mobile-image-section { display: none !important; }
         }
       `}</style>
 
@@ -325,79 +316,64 @@ export default function MainSection({ product }) {
             />
           </div>
 
-          {/* Mobile slider */}
-          <div 
-            className="mobile-slider"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div 
-              className="slider-container"
-              style={{ transform: `translateX(-${selectedImg * 100}%)` }}
-            >
+          {/* Custom mobile image section */}
+          <div className="mobile-image-section">
+            <div className="mobile-mainimg">
+              <ProductImage
+                imageKey={images[selectedImg]}
+                alt={product.name}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  aspectRatio: "1/1",
+                  borderRadius: "12px",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                  display: "block",
+                  objectFit: "cover",
+                  background: "#fff",
+                }}
+                placeholder={<div style={{ width: "100%", height: 240, background: "#f4f4f4", borderRadius: "12px" }} />}
+              />
+            </div>
+            <div className="mobile-thumb-row">
               {images.map((src, i) => (
-                <div key={i} className="slider-slide">
+                <div
+                  key={i}
+                  className={`pf-thumb ${i === selectedImg ? "selected" : ""}`}
+                  onClick={() => setSelectedImg(i)}
+                  style={{
+                    minWidth: "68px",
+                    width: "68px",
+                    height: "68px",
+                    marginRight: i !== images.length - 1 ? "10px" : "0",
+                  }}
+                >
                   <ProductImage
                     imageKey={src}
-                    alt={`${product.name} image ${i + 1}`}
-                    style={{ width: "100%", height: "auto", objectFit: "cover", display: "block" }}
-                    placeholder={<div style={{ width: "100%", height: 300, background: "#f4f4f4" }} />}
+                    alt={`${product.name} thumb ${i + 1}`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "6px",
+                      objectFit: "cover",
+                      display: "block",
+                      background: "#fff",
+                    }}
+                    placeholder={<div style={{ width: "100%", height: "100%", background: "#f4f4f4" }} />}
                   />
                 </div>
               ))}
             </div>
-
-            {/* Navigation arrows */}
-            {images.length > 1 && (
-              <>
-                <button className="slider-nav prev" onClick={prevImage} aria-label="Previous image">
-                  ‹
-                </button>
-                <button className="slider-nav next" onClick={nextImage} aria-label="Next image">
-                  ›
-                </button>
-              </>
-            )}
-
-            {/* Dots indicator */}
-            {images.length > 1 && (
-              <div className="slider-dots">
-                {images.map((_, i) => (
-                  <button
-                    key={i}
-                    className={`slider-dot ${i === selectedImg ? "active" : ""}`}
-                    onClick={() => setSelectedImg(i)}
-                    aria-label={`Go to image ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Mobile thumbnails */}
-          <div className="mobile-thumbs">
-            {images.map((src, i) => (
-              <div
-                key={i}
-                className={`pf-thumb ${i === selectedImg ? "selected" : ""}`}
-                onClick={() => setSelectedImg(i)}
-              >
-                <ProductImage
-                  imageKey={src}
-                  alt={`${product.name} thumb ${i + 1}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  placeholder={<div style={{ width: "100%", height: "100%", background: "#f4f4f4" }} />}
-                />
-              </div>
-            ))}
           </div>
         </div>
 
         {/* RIGHT: info */}
         <div className="pf-info">
           <div className="pf-toprow">
-            <div className={`pf-veg ${product.isVeg ? "veg" : "nonveg"}`} title={product.isVeg ? "Vegetarian" : "Non vegetarian"} />
+            <div
+              className={`pf-veg ${product.isVeg ? "veg" : "nonveg"}`}
+              title={product.isVeg ? "Vegetarian" : "Non vegetarian"}
+            />
             <div style={{ flex: 1 }}>
               <h1 className="pf-title">{product.name}</h1>
             </div>
@@ -437,7 +413,9 @@ export default function MainSection({ product }) {
 
           {/* ORDER NOW - always visible below accordion; full width of info column */}
           <div className="pf-order-row">
-            <Link to={`/contact?product=${productSlug}&qty=1`} className="pf-order-btn">Order now</Link>
+            <Link to={`/contact?product=${productSlug}&qty=1`} className="pf-order-btn">
+              Order now
+            </Link>
           </div>
         </div>
       </div>
