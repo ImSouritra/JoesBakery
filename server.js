@@ -2,7 +2,6 @@
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 const multer = require("multer");
 const { Pool } = require("pg");
 const slugify = require("slugify");
@@ -42,6 +41,20 @@ if (process.env.DATABASE_URL) {
   };
 }
 const pool = new Pool(poolConfig);
+// Prevent uncaught pool errors from crashing the process (e.g., :shutdown, :db_termination)
+pool.on("error", (err) => {
+  console.error("[PG] Unexpected pool error (process kept alive):", err);
+});
+
+// Optional: initial connectivity probe (non-fatal)
+(async () => {
+  try {
+    await pool.query("SELECT 1");
+    console.log("[PG] Initial database connectivity OK");
+  } catch (e) {
+    console.error("[PG] Initial database connectivity FAILED:", e.message);
+  }
+})();
 
 /* -------------------- Multer (Memory Storage) -------------------- */
 const upload = multer({
@@ -288,6 +301,177 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
+/* -------------------- API: Update Product -------------------- */
+// Accepts JSON or multipart/form-data (for new images)
+// Route: PUT /api/products/:id
+// Body fields (all optional except at least one must exist):
+//  name, isVeg, weight, type (JSON array or comma string), description, ingredients, delivery_instructions
+//  removeImageUrls: JSON array of existing image URLs to remove
+//  imageUrls: JSON array of external image URLs to add
+//  images[] (multipart files) to upload to Supabase
+app.put("/api/products/:id", upload.array("images", 8), async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: "Invalid id" });
+
+  try {
+    const existingRes = await query("SELECT * FROM products WHERE id = $1 LIMIT 1", [id]);
+    if (existingRes.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    const existing = existingRes.rows[0];
+
+    const { name, isVeg, weight, type, description, ingredients, delivery_instructions } = req.body;
+
+    let fields = [];
+    let values = [];
+    let paramIndex = 1;
+
+    function pushField(column, value) {
+      fields.push(`${column} = $${paramIndex++}`);
+      values.push(value);
+    }
+
+    if (typeof name === "string" && name.trim()) {
+      const normalizedName = name.trim();
+      const newSlug = slugify(normalizedName, { lower: true, strict: true });
+      const dup = await query(
+        "SELECT id FROM products WHERE (slug = $1 OR lower(name)=lower($2)) AND id <> $3 LIMIT 1",
+        [newSlug, normalizedName, id]
+      );
+      if (dup.rowCount > 0) {
+        return res.status(409).json({ error: "Another product with that name exists" });
+      }
+      pushField("name", normalizedName);
+      pushField("slug", newSlug);
+    }
+
+    if (typeof isVeg !== "undefined") {
+      const boolVal = isVeg === "true" || isVeg === true || isVeg === 1 || isVeg === "1";
+      pushField("is_veg", boolVal);
+    }
+    if (typeof weight !== "undefined") pushField("weight", weight || null);
+    if (typeof description !== "undefined") pushField("description", description || null);
+    if (typeof ingredients !== "undefined") pushField("ingredients", ingredients || null);
+    if (typeof delivery_instructions !== "undefined") pushField("delivery_instructions", delivery_instructions || null);
+
+    if (typeof type !== "undefined") {
+      let typesParsed = [];
+      try {
+        const t = String(type || "[]");
+        typesParsed = t.trim().startsWith("[")
+          ? JSON.parse(t)
+          : t.split(",").map((s) => s.trim()).filter(Boolean);
+      } catch {
+        typesParsed = [];
+      }
+      pushField("type", JSON.stringify(typesParsed));
+    }
+
+    const hasImageOps = !!(req.files?.length || req.body.imageUrls || req.body.removeImageUrls);
+    if (!fields.length && !hasImageOps) {
+      return res.status(400).json({ error: "No changes provided" });
+    }
+
+    if (fields.length) {
+      // NOTE: original code tried to set updated_at = NOW(), but column does not exist in current schema.
+      // If you later add an updated_at TIMESTAMP column, reintroduce: , updated_at = NOW()
+      const sql = `UPDATE products SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+      values.push(id);
+      const updatedRes = await query(sql, values);
+      Object.assign(existing, updatedRes.rows[0]);
+    } else if (hasImageOps) {
+      // Only images changed; nothing to update in products table since we have no updated_at column.
+    }
+
+    const newImages = [];
+
+    // Remove specified image URLs
+    if (req.body.removeImageUrls) {
+      try {
+        const arr =
+          typeof req.body.removeImageUrls === "string"
+            ? JSON.parse(req.body.removeImageUrls)
+            : req.body.removeImageUrls;
+        if (Array.isArray(arr)) {
+          for (const url of arr) {
+            if (typeof url !== "string") continue;
+            await query("DELETE FROM product_images WHERE product_id=$1 AND path=$2", [id, url]);
+            // Attempt physical removal if it's a Supabase-hosted file
+            if (
+              url &&
+              SUPABASE_URL &&
+              SUPABASE_BUCKET &&
+              url.includes(`/storage/v1/object/public/${SUPABASE_BUCKET}/`)
+            ) {
+              const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
+              const idx = url.indexOf(marker);
+              if (idx !== -1) {
+                const objectPath = url.substring(idx + marker.length);
+                await supabase.storage.from(SUPABASE_BUCKET).remove([objectPath]);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed parsing removeImageUrls", e);
+      }
+    }
+
+    // Add uploaded files
+    if (Array.isArray(req.files) && req.files.length) {
+      for (const file of req.files) {
+        const ext = path.extname(file.originalname) || ".jpg";
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        const objectPath = `product-${id}/${filename}`;
+        const { error: uploadError } = await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .upload(objectPath, file.buffer, { contentType: file.mimetype });
+        if (uploadError) {
+          console.error("Supabase upload error (update):", uploadError);
+          continue;
+        }
+        const { data: publicData, error: publicError } = await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .getPublicUrl(objectPath);
+        if (!publicError && publicData?.publicUrl) {
+          await query(
+            "INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())",
+            [id, publicData.publicUrl]
+          );
+          newImages.push(publicData.publicUrl);
+        }
+      }
+    }
+
+    // Add external image URLs
+    if (req.body.imageUrls) {
+      try {
+        const arr =
+          typeof req.body.imageUrls === "string" ? JSON.parse(req.body.imageUrls) : req.body.imageUrls;
+        if (Array.isArray(arr)) {
+          for (const u of arr) {
+            if (typeof u !== "string") continue;
+            await query(
+              "INSERT INTO product_images (product_id, path, created_at) VALUES ($1,$2,NOW())",
+              [id, u]
+            );
+            newImages.push(u);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed parsing imageUrls", e);
+      }
+    }
+
+    // Return composite product with all images
+    const imgsRes = await query("SELECT path FROM product_images WHERE product_id = $1 ORDER BY id ASC", [id]);
+    const images = imgsRes.rows.map((r) => r.path);
+
+    res.json({ product: { ...existing, images } });
+  } catch (err) {
+    console.error("PUT /api/products/:id error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 /* -------------------- API: Get Products -------------------- */
 app.get("/api/products", async (req, res) => {
   try {
@@ -385,19 +569,19 @@ Message: ${message}
   }
 });
 
-/* -------------------- Serve React Build (SPA Fallback) -------------------- */
-if (process.env.NODE_ENV === "production") {
-  const clientBuildPath = path.join(__dirname, "build");
-  if (fs.existsSync(clientBuildPath)) {
-    app.use(express.static(clientBuildPath));
-    // Catch-all fallback (Express v5 safe)
-    app.use((req, res) => {
-      res.sendFile(path.join(clientBuildPath, "index.html"));
-    });
-  }
-}
+/* -------------------- Frontend Removed -------------------- */
+// This repository now serves only the JSON API. No static frontend build is delivered.
+// If you reintroduce a client build later, add static serving middleware here.
 
 /* -------------------- Start Server -------------------- */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+});
+
+// Global fallbacks (keep last – do not swallow, only log)
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err);
 });
