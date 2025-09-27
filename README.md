@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+## JoesBakery Frontend (React)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository now contains ONLY the React frontend. The backend / API (Express + Postgres + Supabase storage + mailing) has been migrated to a separate repository.
 
-## Available Scripts
+### Tech Stack
+React (Create React App)
+React Router
+LocalForage (client-side persistence for "extra" products)
+Framer Motion (animations)
+Slugify (friendly product URLs)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Quick Start
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. Install dependencies:
+	npm install
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+2. (Optional) Create a `.env` file (see `.env.example`) if you need to point to a remote API:
+	REACT_APP_API_BASE=https://your-backend-domain
 
-### `npm test`
+3. Run the dev server:
+	npm start
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+	This starts the CRA dev server at http://localhost:3000
 
-### `npm run build`
+4. Build for production:
+	npm run build
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+5. Run tests:
+	npm test
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Environment Variables
 
-### `npm run eject`
+Set `REACT_APP_API_BASE` to the root URL of the backend API (no trailing slash). If omitted, the app will use relative paths (useful when the frontend and backend are deployed under the same origin or when mocking data).
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Example `.env`:
+REACT_APP_API_BASE=https://api.joesbakery.com
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+See `.env.example` for a template.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## API Calls
+Centralized in `src/config.js`:
+export const API_BASE = (process.env.REACT_APP_API_BASE || "").replace(/\/$/, "");
 
-## Learn More
+Components build URLs like:
+fetch(`${API_BASE}/api/products`)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+If `API_BASE` is blank, this becomes `/api/products` (relative).
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Product Data Sources
+1. Static seed data (see `src/data/productData.js`).
+2. Remote backend products (if API reachable).
+3. Local "extras" stored in IndexedDB via LocalForage (browser-only, per device).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The Admin page merges these sources for display.
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Removing Backend-Specific Code
+All server-side code (`server.js`, Express, Postgres, Multer, Nodemailer, Supabase service role) has been removed from this repo. Related dependencies were stripped from `package.json`.
 
-### Making a Progressive Web App
+If you accidentally reintroduce server-only libraries, remember they will inflate the client bundle or break builds.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## Deployment
+Any static hosting provider (Vercel, Netlify, Render static, GitHub Pages) can serve the build output. Ensure your backend origin is set in `REACT_APP_API_BASE` (build-time) or hosted under the same domain with a reverse proxy mapping `/api/*`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## Contributing / Next Steps
+Potential improvements:
+* Add skeleton loaders for product lists.
+* Add error boundary / offline fallback.
+* Integrate service worker for asset caching.
+* Add end-to-end tests (e.g., Playwright) against deployed backend.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
+## Scripts (Summary)
+start  – CRA dev server
+build  – Production build to /build
+test   – Jest / React Testing Library
+eject  – Expose CRA config (irreversible)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## License
+Internal / Proprietary (update this section as needed).

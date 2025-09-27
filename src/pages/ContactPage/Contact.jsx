@@ -1,5 +1,6 @@
 // src/pages/Contact/Contact.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { API_BASE } from "../../config";
 import { useSearchParams } from "react-router-dom";
 import slugify from "slugify";
 import "./Contact.css";
@@ -84,10 +85,7 @@ export default function Contact({ products = [] } = {}) {
     return Object.keys(e).length === 0;
   }
 
-  // Helper: compute API base
-  // In dev: set REACT_APP_API_URL_BASE="http://localhost:5000"
-  // In production: set to your deployed server domain, or leave "" to use relative paths
-  const API_BASE = (process.env.REACT_APP_API_URL_BASE || "").replace(/\/+$/, "");
+  // API_BASE comes from centralized config (src/config.js)
 
   async function handleSubmit(e) {
     e.preventDefault();

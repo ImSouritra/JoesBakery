@@ -13,7 +13,7 @@ export const TABS = [
 
 export const PRODUCTS = [
   {
-    images: [cheesecake],
+    images: [cheesecake,teacake],
     name: "New York Cheesecake",
     isVeg: true,
     weight: "500 GM",

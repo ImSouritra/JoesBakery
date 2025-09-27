@@ -5,6 +5,7 @@ import Navbar from "./Navbar/NavBar";
 import Footer from "./Footer/Footer";
 
 import HomePage from "./pages/Homepage/HomePage";
+import { API_BASE } from "./config";
 import SingleProductLandingPage from "./pages/SingleProductLandingPage/SingleProductLandingPage";
 import CategoryLandingPage from "./pages/CategoryLandingPage/CategoryLandingPage";
 import Admin from "./pages/AdminPage/Admin";
@@ -17,8 +18,7 @@ function App() {
   async function fetchProducts() {
     try {
       // ✅ Use relative path in production, env var override allowed for dev
-      const API_BASE = process.env.REACT_APP_API_URL_BASE || "";
-      const res = await fetch(`${API_BASE}/api/products`);
+  const res = await fetch(`${API_BASE}/api/products`);
 
       if (!res.ok) {
         console.warn("Failed to fetch products");

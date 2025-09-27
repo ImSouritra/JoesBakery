@@ -1,5 +1,6 @@
 // src/pages/Admin/Admin.jsx
 import React, { useEffect, useState, useCallback } from "react";
+import { API_BASE } from "../../config";
 import localforage from "localforage";
 import AddProduct from "./AddProduct/AddProduct"; 
 import { PRODUCTS as STATIC_PRODUCTS } from "../../data/productData";
@@ -19,6 +20,13 @@ const extrasStore = localforage.createInstance({
   name: "joesbakery",
   storeName: "extras",
 });
+
+// Minimal fetch helper
+async function fetchJSON(url, opts){
+  const r = await fetch(url, opts);
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
 
 async function readExtrasSafe() {
   try {
@@ -56,9 +64,16 @@ export default function Admin() {
   const [extras, setExtras] = useState([]);
   const [serverProducts, setServerProducts] = useState([]);
   const staticArr = flattenStatic(STATIC_PRODUCTS);
+  
+  // Modal editing state
+  const [editing,setEditing]=useState(null); // product being edited
+  const [form,setForm]=useState({});
+  const [removeImages,setRemoveImages]=useState([]);
+  const [newExternal,setNewExternal]=useState('');
+  const [externalList,setExternalList]=useState([]);
+  const [newFiles,setNewFiles]=useState([]);
 
-  // always use relative API path so it works on Railway and locally with CRA proxy
-  const API_BASE = process.env.REACT_APP_API_URL || "";
+  // Centralized API base imported from src/config.js
   const API_PREFIX = API_BASE ? API_BASE.replace(/\/$/, "") : "";
 
   useEffect(() => {
@@ -178,6 +193,67 @@ export default function Admin() {
     setExtras(kept);
   }, []);
 
+  // Modal editing functions
+  const openEdit=useCallback(p=>{
+    setEditing(p);
+    setForm({
+      name:p.name||'',
+      weight:p.weight||'',
+      description:p.description||'',
+      ingredients:p.ingredients||'',
+      delivery_instructions:p.delivery_instructions||'',
+      isVeg: !!p.is_veg,
+      type: Array.isArray(p.type)? p.type.join(', '): (p.type||'')
+    });
+    setRemoveImages([]);
+    setExternalList([]);
+    setNewExternal('');
+    setNewFiles([]);
+  },[]);
+
+  const closeEdit=()=>{ setEditing(null); };
+
+  function updateField(k,v){ setForm(f=>({...f,[k]:v})); }
+
+  function toggleRemove(img){ setRemoveImages(arr=> arr.includes(img)? arr.filter(i=>i!==img): [...arr,img]); }
+
+  function addExternal(){ if(!newExternal.trim()) return; setExternalList(l=>[...l,newExternal.trim()]); setNewExternal(''); }
+  function removeExternal(u){ setExternalList(l=>l.filter(x=>x!==u)); }
+
+  async function submitEdit(){
+    if(!editing) return;
+    const hasFiles = newFiles.length>0;
+    let data;
+    let headers={};
+    if(hasFiles){
+      data = new FormData();
+      if(form.name.trim()) data.append('name', form.name.trim());
+      data.append('isVeg', form.isVeg? 'true':'false');
+      if(form.weight) data.append('weight', form.weight);
+      if(form.description) data.append('description', form.description);
+      if(form.ingredients) data.append('ingredients', form.ingredients);
+      if(form.delivery_instructions) data.append('delivery_instructions', form.delivery_instructions);
+      if(form.type) data.append('type', JSON.stringify(form.type.split(',').map(s=>s.trim()).filter(Boolean)));
+      if(removeImages.length) data.append('removeImageUrls', JSON.stringify(removeImages));
+      if(externalList.length) data.append('imageUrls', JSON.stringify(externalList));
+      newFiles.forEach(f=> data.append('images', f));
+    } else {
+      const payload={};
+      ['name','weight','description','ingredients','delivery_instructions'].forEach(k=>{ if(form[k]) payload[k]=form[k]; });
+      payload.isVeg = form.isVeg;
+      if(form.type) payload.type = form.type.split(',').map(s=>s.trim()).filter(Boolean);
+      if(removeImages.length) payload.removeImageUrls = removeImages;
+      if(externalList.length) payload.imageUrls = externalList;
+      data = JSON.stringify(payload);
+      headers['Content-Type']='application/json';
+    }
+    try{
+      const updated = await fetchJSON(`${API_PREFIX}/api/products/${editing.id}`, { method:'PUT', headers, body:data });
+      setServerProducts(prev => prev.map(p => p.id === editing.id ? { ...p, ...updated.product } : p));
+      closeEdit();
+    }catch(e){ alert('Update failed: '+ e.message); }
+  }
+
   return (
     <div className="admin-root" style={{ padding: 24 }}>
       <h1>Admin — Add Product</h1>
@@ -216,6 +292,7 @@ export default function Admin() {
                 p={p}
                 onDelete={() => onDeleteServerProduct(p.id, p.name)}
                 deleteLabel="Delete (DB)"
+                onEdit={() => openEdit(p)}
               />
             ))}
 
@@ -235,11 +312,83 @@ export default function Admin() {
           </div>
         )}
       </section>
+
+      {/* Modal for editing */}
+      {editing && <div className='edit-modal-overlay'>
+        <div className='edit-modal'>
+          <button className='close-btn' onClick={closeEdit}>✕</button>
+          <h3>Edit Product</h3>
+          <form onSubmit={e=>{e.preventDefault(); submitEdit();}}>
+            <div className='edit-row'>
+              <div className='field'>
+                <label>Name</label>
+                <input value={form.name} onChange={e=>updateField('name', e.target.value)} />
+              </div>
+              <div className='field'>
+                <label>Weight</label>
+                <input value={form.weight} onChange={e=>updateField('weight', e.target.value)} />
+              </div>
+            </div>
+            <div className='edit-row'>
+              <div className='field'>
+                <label>Types (comma)</label>
+                <input value={form.type} onChange={e=>updateField('type', e.target.value)} />
+                <div className='edit-tags-hint'>Example: chocolate, premium, eggless</div>
+              </div>
+              <div className='field'>
+                <label>Veg?</label>
+                <div className='inline-checkbox'>
+                  <input type='checkbox' checked={form.isVeg} onChange={e=>updateField('isVeg', e.target.checked)} /> <span>Is Vegetarian</span>
+                </div>
+              </div>
+            </div>
+            <div className='field'>
+              <label>Description</label>
+              <textarea value={form.description} onChange={e=>updateField('description', e.target.value)} />
+            </div>
+            <div className='field'>
+              <label>Ingredients</label>
+              <textarea value={form.ingredients} onChange={e=>updateField('ingredients', e.target.value)} />
+            </div>
+            <div className='field'>
+              <label>Delivery Instructions</label>
+              <textarea value={form.delivery_instructions} onChange={e=>updateField('delivery_instructions', e.target.value)} />
+            </div>
+            <div className='field'>
+              <label>Existing Images (click X to mark remove)</label>
+              <div className='image-grid'>
+                {(editing.images||[]).map(img=> <div key={img} className='image-chip'> <img src={img} alt=''/> <button type='button' onClick={()=>toggleRemove(img)} style={removeImages.includes(img)?{background:'#b91d1d'}:undefined}>×</button> </div>)}
+              </div>
+              {removeImages.length>0 && <div className='removal-list'>Will remove: {removeImages.length}</div>}
+            </div>
+            <div className='field'>
+              <label>Add New Image Files</label>
+              <input type='file' multiple accept='image/*' onChange={e=> setNewFiles(Array.from(e.target.files||[]))} className='add-images-input'/>
+              {newFiles.length>0 && <div style={{fontSize:'0.7rem'}}>{newFiles.length} file(s) selected</div>}
+            </div>
+            <div className='field external-urls'>
+              <label>Add External Image URLs</label>
+              <div style={{display:'flex', gap:6}}>
+                <input type='text' value={newExternal} onChange={e=>setNewExternal(e.target.value)} placeholder='https://...' />
+                <button type='button' className='btn btn-secondary' onClick={addExternal}>Add</button>
+              </div>
+              {externalList.length>0 && <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                {externalList.map(u=> <span key={u} style={{background:'#eef1ff', padding:'4px 8px', borderRadius:20, fontSize:'0.65rem'}}>{u} <button type='button' onClick={()=>removeExternal(u)} style={{marginLeft:4,border:'none',background:'transparent',cursor:'pointer'}}>×</button></span>)}
+              </div>}
+              <small>Added URLs will be appended as images.</small>
+            </div>
+            <div className='modal-actions'>
+              <button type='button' className='btn btn-secondary' onClick={closeEdit}>Cancel</button>
+              <button type='submit' className='btn btn-primary'>Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>}
     </div>
   );
 }
 
-function AdminCard({ p, label, onDelete, deleteLabel }) {
+function AdminCard({ p, label, onDelete, deleteLabel, onEdit }) {
   return (
     <div
       className="admin-card"
@@ -266,21 +415,18 @@ function AdminCard({ p, label, onDelete, deleteLabel }) {
           {Array.isArray(p.type) ? p.type.join(", ") : p.type}
         </div>
         {label && <div style={{ marginTop: 8, fontSize: 13, color: "#999" }}>{label}</div>}
-        {onDelete && (
-          <div style={{ marginTop: 10 }}>
-            <button
-              className="admin-delete"
-              onClick={onDelete}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 8,
-                background: "#fff",
-                border: "1px solid #e6e6e6",
-                cursor: "pointer",
-              }}
-            >
-              {deleteLabel || "Delete"}
-            </button>
+        {(onDelete || onEdit) && (
+          <div className="admin-actions">
+            {onEdit && (
+              <button className="admin-edit" onClick={onEdit}>
+                ✏️ Edit
+              </button>
+            )}
+            {onDelete && (
+              <button className="admin-delete" onClick={onDelete}>
+                {deleteLabel || "Delete"}
+              </button>
+            )}
           </div>
         )}
       </div>

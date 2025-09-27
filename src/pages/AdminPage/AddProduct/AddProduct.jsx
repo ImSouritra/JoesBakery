@@ -1,5 +1,6 @@
 // src/pages/Admin/AddProduct/AddProduct.jsx
 import React, { useState } from "react";
+import { API_BASE } from "../../../config";
 import "./AddProduct.css";
 
 const PREDEFINED_TYPES = [
@@ -81,8 +82,7 @@ export default function AddProduct({ onProductAdd }) {
       }
 
       // Use relative API in production; env override allowed
-      const API_BASE = process.env.REACT_APP_API_URL || "";
-      const res = await fetch(`${API_BASE}/api/products`, {
+  const res = await fetch(`${API_BASE}/api/products`, {
         method: "POST",
         body: fd,
       });
@@ -246,7 +246,10 @@ export default function AddProduct({ onProductAdd }) {
           ) : (
             previewUrls.map((u, i) => (
               <div className="thumb" key={i}>
-                <img src={u} alt={"preview-" + i} />
+                <img 
+                  src={u} 
+                  alt={form.name ? `${form.name} - Image ${i + 1}` : `Product preview ${i + 1}`} 
+                />
                 <button
                   type="button"
                   className="thumb-remove"

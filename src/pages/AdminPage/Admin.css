@@ -129,6 +129,46 @@
     background: rgba(220,53,69,0.06);
     transform: translateY(-2px);
   }
+
+  /* Action buttons container */
+  .admin-actions {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+
+  /* Edit button */
+  .admin-edit {
+    background: linear-gradient(135deg, #fdfdfd, #f6f7ff);
+    border: 1px solid #dcdffa;
+    color: #2d3a8c;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+  }
+  .admin-edit:hover {
+    background: #eef1ff;
+    box-shadow: 0 4px 18px -4px rgba(55,70,140,0.25);
+    transform: translateY(-2px);
+  }
+  .admin-edit:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px -2px rgba(55,70,140,0.2);
+  }
+
+  /* Make buttons full width stacked on very small screens */
+  @media (max-width: 420px) {
+    .admin-actions { flex-direction: column; }
+    .admin-actions button { width: 100%; }
+  }
   
   /* Small info row (types) */
   .admin-body .types {
@@ -163,4 +203,34 @@
   
   /* Utility: compact admin card (if you'd like) */
   .admin-card.compact .admin-img-wrap { height: 120px; }
+  
+  /* === Edit Modal (extended product editing) === */
+  :root { --edit-overlay-bg: rgba(0,0,0,0.38); --edit-modal-bg:#ffffff; }
+  .edit-modal-overlay { position:fixed; inset:0; background:var(--edit-overlay-bg); display:flex; align-items:flex-start; justify-content:center; overflow:auto; padding:40px 20px; z-index:1000; }
+  .edit-modal { background:var(--edit-modal-bg); width:100%; max-width:640px; border-radius:18px; box-shadow:0 30px 70px -20px rgba(0,0,0,0.25); padding:28px 30px 34px; position:relative; font-family:Poppins,system-ui; }
+  .edit-modal h3 { margin:0 0 18px; font-size:1.4rem; font-weight:600; }
+  .edit-modal .close-btn { position:absolute; top:10px; right:10px; border:none; background:#f5f5f7; width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .edit-modal form { display:flex; flex-direction:column; gap:14px; }
+  .edit-row { display:flex; gap:14px; }
+  .edit-row .field { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .edit-modal label { font-size:0.78rem; letter-spacing:0.5px; font-weight:600; text-transform:uppercase; color:#444; }
+  .edit-modal input[type=text], .edit-modal textarea { width:100%; border:1px solid #d9d9e3; border-radius:10px; padding:10px 12px; font-size:0.95rem; font-family:inherit; resize:vertical; background:#fff; }
+  .edit-modal textarea { min-height:90px; }
+  .edit-tags-hint { font-size:0.7rem; color:#777; margin-top:-4px; }
+  .inline-checkbox { display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .image-grid { display:flex; flex-wrap:wrap; gap:8px; }
+  .image-chip { position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); }
+  .image-chip img { width:100%; height:100%; object-fit:cover; display:block; }
+  .image-chip button { position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.55); color:#fff; border:none; padding:2px 6px; font-size:11px; line-height:1; border-radius:6px; cursor:pointer; }
+  .add-images-input { margin-top:4px; font-size:0.8rem; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:14px; margin-top:6px; }
+  .btn { border:none; border-radius:10px; padding:10px 18px; cursor:pointer; font-weight:600; font-size:0.9rem; display:inline-flex; align-items:center; gap:6px; }
+  .btn-secondary { background:#f1f2f6; color:#333; }
+  .btn-secondary:hover { background:#e4e6ed; }
+  .btn-primary { background:#2d3a8c; color:#fff; box-shadow:0 4px 16px -4px rgba(45,58,140,0.5); }
+  .btn-primary:hover { background:#253071; }
+  .removal-list { font-size:0.7rem; color:#b22; }
+  .external-urls { display:flex; flex-direction:column; gap:6px; }
+  .external-urls small { font-size:0.65rem; color:#666; }
+  @media (max-width:640px){ .edit-row { flex-direction:column; } .edit-modal { padding:24px 22px 28px; } }
   

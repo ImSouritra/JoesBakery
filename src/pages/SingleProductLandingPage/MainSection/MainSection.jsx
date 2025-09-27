@@ -2,16 +2,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import slugify from "slugify";
-// IMPORTANT: adjust path if your ProductImage location is different.
-// Example locations:
-// import ProductImage from "../../components/ProductImage"; // if MainSection is in pages/... and components is two levels up
-// import ProductImage from "../../../../components/ProductImage"; // if nested deeper
 import ProductImage from "../../../components/ProductImage";
 
- // Usage: <MainSection product={product} />
 export default function MainSection({ product }) {
   const [selectedImg, setSelectedImg] = useState(0);
   const [openAccordions, setOpenAccordions] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
 
   if (!product) return null;
 
@@ -25,6 +22,43 @@ export default function MainSection({ product }) {
       : ["https://via.placeholder.com/1200x900?text=Product"];
 
   const productSlug = slugify(product.name || "product", { lower: true });
+
+  // Mobile slider functions
+  const nextImage = () => {
+    setSelectedImg((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setSelectedImg((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  // Touch handling for mobile slider
+  const handleTouchStart = (e) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    const endX = e.changedTouches[0].clientX;
+    const diffX = startX - endX;
+    
+    // Minimum swipe distance
+    if (Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        nextImage();
+      } else {
+        prevImage();
+      }
+    }
+  };
 
   return (
     <div className="pf-hero-root">
@@ -54,8 +88,115 @@ export default function MainSection({ product }) {
         .pf-thumb img, .pf-thumb > div { width: 100%; height: 100%; object-fit: cover; display:block; }
         .pf-thumb.selected { border-color: #111; box-shadow: 0 8px 26px rgba(17,17,17,0.12); transform: translateY(-2px); }
 
-        .pf-mainimg { flex: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 40px rgba(2,6,23,0.08); width: 100%; }
+        .pf-mainimg { flex: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 40px rgba(2,6,23,0.08); width: 100%; position: relative; }
         .pf-mainimg img { width: 100%; height: auto; object-fit: cover; display:block; aspect-ratio: 16/12; max-height: 800px; }
+
+        /* Mobile slider styles */
+        .mobile-slider {
+          display: none;
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          border-radius: 10px;
+          box-shadow: 0 10px 40px rgba(2,6,23,0.08);
+        }
+
+        .slider-container {
+          display: flex;
+          transition: transform 0.3s ease;
+          touch-action: pan-y;
+        }
+
+        .slider-slide {
+          min-width: 100%;
+          height: auto;
+        }
+
+        .slider-slide img {
+          width: 100%;
+          height: auto;
+          object-fit: cover;
+          display: block;
+          aspect-ratio: 16/12;
+        }
+
+        .slider-nav {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(255,255,255,0.9);
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 18px;
+          font-weight: bold;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          z-index: 2;
+          transition: all 0.2s ease;
+        }
+
+        .slider-nav:hover {
+          background: rgba(255,255,255,1);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .slider-nav.prev {
+          left: 10px;
+        }
+
+        .slider-nav.next {
+          right: 10px;
+        }
+
+        .slider-dots {
+          position: absolute;
+          bottom: 15px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 8px;
+          z-index: 2;
+        }
+
+        .slider-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.5);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .slider-dot.active {
+          background: rgba(255,255,255,1);
+          transform: scale(1.2);
+        }
+
+        /* Mobile thumbnails - horizontal scroll */
+        .mobile-thumbs {
+          display: none;
+          overflow-x: auto;
+          padding: 10px 0;
+          gap: 8px;
+          margin-top: 10px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .mobile-thumbs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .mobile-thumbs .pf-thumb {
+          min-width: 56px;
+          width: 56px;
+          height: 56px;
+        }
 
         /* RIGHT - info */
         .pf-info { padding-top: 0.5rem; padding-left: 1.25rem; padding-right: 1.25rem; }
@@ -117,23 +258,42 @@ export default function MainSection({ product }) {
           .pf-hero { grid-template-columns: 1fr; padding: 0 4vw; gap: 1.6rem; }
           .pf-media { order:0; }
           .pf-info { order:1; padding-left: 0; padding-right: 0; }
-          .pf-thumbs { flex-direction: row; }
-          .pf-thumb { width:56px; height:56px; }
-          .pf-mainimg img { aspect-ratio: 16/12; max-height: 520px; border-radius: 10px; }
+          
+          /* Hide desktop image gallery on mobile */
+          .pf-thumbs { display: none; }
+          .pf-mainimg { display: none; }
+          
+          /* Show mobile slider */
+          .mobile-slider { display: block; }
+          .mobile-thumbs { display: flex; }
+          
           .pf-title { font-size: 1.9rem; }
         }
 
         @media (max-width: 520px) {
           .pf-hero { padding: 0 3.5vw; }
-          .pf-thumb { width:52px; height:52px; }
           .pf-title { font-size: 1.35rem; }
-          .pf-mainimg img { max-height: 320px; }
+          
+          .slider-nav {
+            width: 35px;
+            height: 35px;
+            font-size: 16px;
+          }
+          
+          .slider-nav.prev {
+            left: 8px;
+          }
+          
+          .slider-nav.next {
+            right: 8px;
+          }
         }
       `}</style>
 
       <div className="pf-hero">
         {/* LEFT: images */}
         <div className="pf-media">
+          {/* Desktop image gallery */}
           <div className="pf-thumbs" aria-hidden={false}>
             {images.map((src, i) => (
               <div
@@ -145,7 +305,6 @@ export default function MainSection({ product }) {
                 tabIndex={0}
                 onKeyDown={(e) => (e.key === "Enter" ? setSelectedImg(i) : null)}
               >
-                {/* use ProductImage for thumbnails */}
                 <ProductImage
                   imageKey={src}
                   alt={`${product.name} thumb ${i + 1}`}
@@ -156,14 +315,82 @@ export default function MainSection({ product }) {
             ))}
           </div>
 
+          {/* Desktop main image */}
           <div className="pf-mainimg">
-            {/* main image uses ProductImage too */}
             <ProductImage
               imageKey={images[selectedImg]}
               alt={product.name}
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               placeholder={<div style={{ width: "100%", height: 460, background: "#f4f4f4" }} />}
             />
+          </div>
+
+          {/* Mobile slider */}
+          <div 
+            className="mobile-slider"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div 
+              className="slider-container"
+              style={{ transform: `translateX(-${selectedImg * 100}%)` }}
+            >
+              {images.map((src, i) => (
+                <div key={i} className="slider-slide">
+                  <ProductImage
+                    imageKey={src}
+                    alt={`${product.name} image ${i + 1}`}
+                    style={{ width: "100%", height: "auto", objectFit: "cover", display: "block" }}
+                    placeholder={<div style={{ width: "100%", height: 300, background: "#f4f4f4" }} />}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation arrows */}
+            {images.length > 1 && (
+              <>
+                <button className="slider-nav prev" onClick={prevImage} aria-label="Previous image">
+                  ‹
+                </button>
+                <button className="slider-nav next" onClick={nextImage} aria-label="Next image">
+                  ›
+                </button>
+              </>
+            )}
+
+            {/* Dots indicator */}
+            {images.length > 1 && (
+              <div className="slider-dots">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`slider-dot ${i === selectedImg ? "active" : ""}`}
+                    onClick={() => setSelectedImg(i)}
+                    aria-label={`Go to image ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile thumbnails */}
+          <div className="mobile-thumbs">
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className={`pf-thumb ${i === selectedImg ? "selected" : ""}`}
+                onClick={() => setSelectedImg(i)}
+              >
+                <ProductImage
+                  imageKey={src}
+                  alt={`${product.name} thumb ${i + 1}`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  placeholder={<div style={{ width: "100%", height: "100%", background: "#f4f4f4" }} />}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
