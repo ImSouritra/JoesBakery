@@ -10,7 +10,6 @@ const socials = [
 
 const quickLinks = [
   { label: "Home", href: "/" },
-  { label: "About Us", href: "/about" },
   { label: "Cakes", href: "/category/cake" },
   { label: "Brownies", href: "/category/brownie" },
   { label: "Muffins", href: "/category/muffin" },
@@ -68,7 +67,7 @@ export default function Footer() {
         </div>
         <div className="footer-top">
           <a
-            href="#top"
+            href="/"
             className="footer-backtotop"
             aria-label="Back to Top"
           >
