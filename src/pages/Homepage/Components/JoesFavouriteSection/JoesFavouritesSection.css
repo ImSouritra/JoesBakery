@@ -39,7 +39,7 @@
   font-weight: 500;
   font-size: 1em;
   border-radius: 10px;
-  transition: background 0.19s, color 0.09s, border-color 0.09s, transform 0.15s;
+  transition: background 0.19s, color 0.09s, border-color 0.09s, transform 0.5s;
   cursor: pointer;
   box-shadow: 0 2px 9px #23232314;
 }

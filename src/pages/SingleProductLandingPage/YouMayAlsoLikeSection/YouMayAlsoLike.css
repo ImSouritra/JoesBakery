@@ -54,7 +54,7 @@
   .youmay-carousel {
     max-width: 2000px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 2rem;
     display: flex;
     gap: 2rem;
     overflow-x: auto;
@@ -76,7 +76,7 @@
   
   @media (max-width: 600px) {
     .youmay-header { padding: 0 1rem; }
-    .youmay-carousel { padding: 0 1rem; gap: 1rem; }
+    .youmay-carousel { padding: 2rem 1rem; gap: 1rem; }
     .youmay-carousel .favorites-card-wrap { flex: 0 0 60vw; width: 60vw; }
   }
   
