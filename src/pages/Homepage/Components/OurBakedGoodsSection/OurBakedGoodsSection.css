@@ -61,16 +61,16 @@
 /* Carousel: full-width and centered on desktop */
 .baked-carousel {
   display: flex;
-  justify-content: center;          /* center items on larger screens */
+  justify-content: center;
   align-items: center;
   gap: 3.2rem;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* smooth touch scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
-  padding: 0 4vw;                    /* balanced padding so items don't touch the edges */
-  scroll-padding-inline: 4vw;        /* snap targets consider the padding */
+  padding: 0 4vw 4vw;        /* <-- added bottom padding */
+  scroll-padding-inline: 4vw;
   width: 100%;
-  max-width: 100%;                   /* allow full viewport width */
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -208,16 +208,3 @@
   .baked-label { font-size: 1.01rem; }
 }
 
-/* Large screens: give items more breathing room, keep centered */
-@media (min-width: 901px) and (max-width: 1200px) {
-  .baked-carousel {
-    padding-bottom: 4vw;
-  }
-}
-@media (min-width: 1201px) {
-  .baked-carousel {
-    gap: 4rem;
-    padding: 0 6vw;
-    scroll-padding-inline: 6vw;
-  }
-}
