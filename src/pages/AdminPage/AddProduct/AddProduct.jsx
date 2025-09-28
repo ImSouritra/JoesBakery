@@ -4,7 +4,7 @@ import { API_BASE } from "../../../config";
 import "./AddProduct.css";
 
 const PREDEFINED_TYPES = [
-  "classic","new","healthy","cake","brownie","cookie","muffin","teacake","bestseller"
+  "classic","new","healthy","cake","brownie","cookie","muffin","mousse","teacake","bestseller"
 ];
 
 export default function AddProduct({ onProductAdd }) {

@@ -1,10 +1,18 @@
+/* OurBakedGoodsSection.css
+   Full stylesheet: desktop = centered full-width carousel;
+   mobile = left-aligned, scrollable (no clipping).
+*/
+
+/* Container */
 .baked-section {
   width: 100%;
-  height: 500px;
   padding: 2rem 0;
   background: #fff;
+  box-sizing: border-box;
+  overflow-x: visible; /* allow carousel to scroll */
 }
 
+/* Title */
 .baked-title {
   text-align: center;
   font-size: 2.6rem;
@@ -13,8 +21,10 @@
   color: #232323;
   letter-spacing: 2px;
   margin: 40px 0 2.5rem 60px;
+  box-sizing: border-box;
 }
 
+/* Carousel wrapper & controls */
 .baked-carousel-control {
   display: flex;
   align-items: center;
@@ -23,10 +33,12 @@
   max-width: 100vw;
   margin: 0 auto;
   position: relative;
+  box-sizing: border-box;
 }
 
+/* Optional nav buttons (hidden by default; shown on small screens if needed) */
 .carousel-btn {
-  display: none; /* Hidden on desktop, shown via media query */
+  display: none;
   background: #232323;
   border: none;
   color: #fff;
@@ -41,49 +53,47 @@
   z-index: 2;
   transition: background 0.18s;
 }
-
-.carousel-btn.left::after {
-  content: '<';
-}
-.carousel-btn.right::after {
-  content: '>';
-}
+.carousel-btn.left::after { content: '<'; }
+.carousel-btn.right::after { content: '>'; }
 .carousel-btn:active,
-.carousel-btn:focus {
-  background: #444;
-}
+.carousel-btn:focus { background: #444; }
 
+/* Carousel: full-width and centered on desktop */
 .baked-carousel {
   display: flex;
-  justify-content: center;
+  justify-content: center;          /* center items on larger screens */
+  align-items: center;
   gap: 3.2rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth touch scrolling on iOS */
   scroll-snap-type: x mandatory;
-  padding: 0 2vw;
+  padding: 0 4vw;                    /* balanced padding so items don't touch the edges */
+  scroll-padding-inline: 4vw;        /* snap targets consider the padding */
   width: 100%;
-  max-width: 1320px;
+  max-width: 100%;                   /* allow full viewport width */
   box-sizing: border-box;
 }
 
-.baked-carousel::-webkit-scrollbar {
-  height: 10px;
-}
-.baked-carousel::-webkit-scrollbar-thumb {
-  background: #f5eee2;
-  border-radius: 6px;
-}
+/* Scrollbar visuals */
+.baked-carousel::-webkit-scrollbar { height: 10px; }
+.baked-carousel::-webkit-scrollbar-thumb { background: #f5eee2; border-radius: 6px; }
+
+/* Each slide */
 .baked-slide {
-  flex: 0 0 180px;
+  flex: 0 0 180px;           /* fixed basis on desktop, will adapt in media queries */
+  min-width: 0;              /* critical: allow shrink and prevent overflow clipping */
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  text-decoration: none;  /* remove underline */
-  color: inherit;         /* inherit parent color */
-  font: inherit;          /* keep same font */
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  box-sizing: border-box;
 }
 
+/* Circular image container */
 .baked-img-circle {
   width: 200px;
   height: 200px;
@@ -95,18 +105,27 @@
   justify-content: center;
   overflow: hidden;
   transition: box-shadow 0.18s;
+  box-sizing: border-box;
 }
+
+/* Make image responsive inside circle */
 .baked-img-circle img {
-  width: 200px;
-  height: 200px;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  min-height: 100%;
   object-fit: cover;
-  border-radius: 50%;
   transition: transform 0.29s;
+  display: block;
 }
+
+/* Hover zoom */
 .baked-slide:hover .baked-img-circle img,
 .baked-slide:focus .baked-img-circle img {
   transform: scale(1.09);
 }
+
+/* Label */
 .baked-label {
   text-align: center;
   font-family: 'Poppins', serif;
@@ -114,46 +133,55 @@
   font-weight: 600;
   color: #232323;
   margin: 0;
+  box-sizing: border-box;
 }
 
-/* Responsive styles */
+/* ---------- Responsive adjustments ---------- */
+
+/* Slightly smaller slides on medium screens */
 @media (max-width: 1200px) {
   .baked-slide { flex: 0 0 160px; }
 }
-@media (max-width:900px) {
+
+/* Tablet / small desktop */
+@media (max-width: 900px) {
   .baked-slide { flex: 0 0 130px; }
   .baked-img-circle { width: 110px; height: 110px; }
-  .baked-img-circle img { width: 90px; height: 90px; }
-  .baked-label { font-size: 1.09rem;}
+  .baked-img-circle img { width: 110px; height: auto; object-fit: cover; }
+  .baked-label { font-size: 1.09rem; }
 }
-@media (max-width:700px) {
-  .baked-section{
-    height: 300px;
-  }
 
+/* Mobile: left-aligned scrolling, no clipping, show nav if desired */
+@media (max-width: 700px) {
+  /* Let the section grow based on content (avoid fixed height) */
+  .baked-section { height: auto; }
 
   .baked-title {
-   font-size: 1.5rem;
-   margin-left:unset;
-   margin-top: 20px;
-   margin-bottom: 40px;
+    font-size: 1.5rem;
+    margin-left: unset;
+    margin-top: 20px;
+    margin-bottom: 40px;
+  }
 
-  }
-  .carousel-btn {
-    display: flex;
-  }
+  /* show optional nav buttons on very small screens */
+  .carousel-btn { display: flex; }
+
+  /* Left-align the carousel so the first card is always visible and scrollable */
   .baked-carousel {
-    gap: 1rem;
-    padding: 0 2vw;
-    max-width: 100vw;
-    min-width: 0;
+    justify-content: flex-start;  /* line up items from left on small screens */
+    gap: 1rem;                    /* tighter gap on mobile */
+    padding: 0 4vw;               /* keep safe side padding so items aren't flush to the edge */
+    scroll-padding-inline: 4vw;
+    overflow-x: auto;
   }
+
   .baked-slide {
     flex: 0 0 30vw;
-    max-width: 33vw;   /* ensures only 3 are visible */
+    max-width: 33vw;   /* ensures about 3 visible items depending on viewport */
     min-width: 120px;
     gap: 10px;
   }
+
   .baked-img-circle {
     width: 100px;
     height: 100px;
@@ -164,15 +192,26 @@
     overflow: hidden;
   }
   .baked-img-circle img {
-    width: 100px;
-    height: 100px;
+    width: 100%;
+    height: auto;
     border-radius: 50%;
-    object-fit: cover;  /* Ensures image fills the whole circle */
+    object-fit: cover;
     transition: transform 0.29s;
   }
+
   .baked-carousel-control {
     padding-left: 20px;
     padding-right: 20px;
   }
+
   .baked-label { font-size: 1.01rem; }
+}
+
+/* Large screens: give items more breathing room, keep centered */
+@media (min-width: 1201px) {
+  .baked-carousel {
+    gap: 4rem;
+    padding: 0 6vw;
+    scroll-padding-inline: 6vw;
+  }
 }

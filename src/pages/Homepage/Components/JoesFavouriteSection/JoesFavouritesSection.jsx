@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // adjust this import path to where your ProductImage component is
 import ProductImage from "../../../../components/ProductImage";
+import vegIcon from "../../../../assets/images/veg-icon.svg"
 
 export default function JoeFavoritesSection({ products = [] }) {
   const [activeTab, setActiveTab] = useState("classic");
@@ -57,7 +58,7 @@ export default function JoeFavoritesSection({ products = [] }) {
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               placeholder={<div style={{ width: "100%", height: "100%", background: "#f4f4f4" }} />}
             />
-            {item.isVeg && <span className="favorites-badge">Veg</span>}
+            {item.is_veg && <span className="favorites-badge"><img src={vegIcon} alt="veg" className="favorites-badge-img"/></span>}
           </div>
 
           <div className="favorites-card-info">

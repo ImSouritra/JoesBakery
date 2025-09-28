@@ -5,6 +5,7 @@ import slugify from "slugify";
 import { PRODUCTS as STATIC_PRODUCTS } from "../../data/productData";
 import ProductImage from "../../components/ProductImage";
 import "./BestSellersPage.css";
+import vegIcon from "../../assets/images/veg-icon.svg"
 
 export default function BestSellersPage({ products: propProducts }) {
   const [sortBy, setSortBy] = useState("featured");
@@ -61,8 +62,8 @@ export default function BestSellersPage({ products: propProducts }) {
       if (filterVeg === false && filterNonVeg === false) {
         // show all
       } else {
-        if (filterVeg && !filterNonVeg && !p.isVeg) return false;
-        if (!filterVeg && filterNonVeg && p.isVeg) return false;
+        if (filterVeg && !filterNonVeg && !p.is_veg) return false;
+        if (!filterVeg && filterNonVeg && p.is_veg) return false;
       }
       if (filterNewOnly) {
         const types = Array.isArray(p.type) ? p.type.map((t) => String(t).toLowerCase()) : [];
@@ -157,19 +158,43 @@ export default function BestSellersPage({ products: propProducts }) {
             {filtered.map((p) => (
               <article key={p.name} className="product-card" role="listitem">
                 <Link
-                  to={`/product/${slugify(p.name, { lower: true })}`}
+                  to={`/favorites/${slugify(p.name, { lower: true })}`}
                   className="product-link"
                 >
                   <div className="product-media">
                     <ProductImage
                       imageKey={(p.images && p.images[0]) || p.img || ""}
                       alt={p.name}
-                      className=""
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      placeholder={<div style={{ background: "#f7f7f7", width: "100%", height: "100%" }} />}
+                      className="" /* optional CSS class */
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                      placeholder={
+                        <div
+                          style={{
+                            background: "#f7f7f7",
+                            width: "100%",
+                            height: "100%",
+                          }}
+                        />
+                      }
                     />
-                    {p.isVeg && <span className="product-badge veg">Veg</span>}
+
+                    {/* Veg badge now uses an icon in a small rounded wrapper */}
+                    {p.is_veg && (
+                      <span className="product-badge veg">
+                        <img
+                          src={vegIcon}
+                          alt="Vegetarian"
+                          className="product-badge-img"
+                        />
+                      </span>
+                    )}
                   </div>
+
                   <div className="product-body">
                     <h3 className="product-name">{p.name}</h3>
                     {p.weight && <div className="product-meta">{p.weight}</div>}

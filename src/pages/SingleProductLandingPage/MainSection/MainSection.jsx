@@ -371,8 +371,8 @@ export default function MainSection({ product }) {
         <div className="pf-info">
           <div className="pf-toprow">
             <div
-              className={`pf-veg ${product.isVeg ? "veg" : "nonveg"}`}
-              title={product.isVeg ? "Vegetarian" : "Non vegetarian"}
+              className={`pf-veg ${product.is_veg ? "veg" : "nonveg"}`}
+              title={product.is_veg ? "Vegetarian" : "Non vegetarian"}
             />
             <div style={{ flex: 1 }}>
               <h1 className="pf-title">{product.name}</h1>

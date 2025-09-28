@@ -1,0 +1,22 @@
+<svg width="123.5" height="121" xmlns="http://www.w3.org/2000/svg">
+ <g id="imagebot_2">
+  <g transform="translate(0, 1) matrix(0.47964, 0, 0, 0.48559, -21.4755, -27.9964)" id="imagebot_3">
+   <!-- green square -->
+   <rect stroke="#007a00" stroke-width="7.8913" fill="none"
+         x="48.944" y="55.595" width="249.03" height="249.25" ry="18.045" id="imagebot_19"/>
+   <!-- green circle -->
+   <path fill="#008000" transform="matrix(.78879 0 0 .78947 -47.401 -114.31)"
+         d="M374.29,366.65C374.29,418.723 332.077,460.936 280.004,460.936S185.718,418.723 185.718,366.65S227.931,272.364 280.004,272.364S374.29,314.577 374.29,366.65z" id="imagebot_18"/>
+   <!-- removed <g id="imagebot_14"> which drew the 'Veg' letters -->
+   
+   <!-- non-veg red square + circle still present -->
+   <rect stroke="#d40000" stroke-width="7.8913" fill="none"
+         x="314.88" y="55.595" width="249.03" height="249.25" ry="18.045" id="imagebot_13"/>
+   <path fill="#d40000" transform="matrix(.78879 0 0 .78947 218.53 -114.31)"
+         d="M374.29,366.65C374.29,418.723 332.077,460.936 280.004,460.936S185.718,418.723 185.718,366.65S227.931,272.364 280.004,272.364S374.29,314.577 374.29,366.65z" id="imagebot_12"/>
+   <g fill="#d40000" transform="matrix(.78879 0 0 .78947 254.07 -279.75)" id="imagebot_4">
+     <!-- (this group draws 'Non Veg' text in red, remove it too if you only want shapes) -->
+   </g>
+  </g>
+ </g>
+</svg>

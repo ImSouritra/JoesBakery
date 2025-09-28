@@ -7,6 +7,7 @@ import muffin from "../../../../assets/images/muffin.JPG";
 import cookies from "../../../../assets/images/cookies.webp";
 import brownie from "../../../../assets/images/brownie.webp";
 import teacake from "../../../../assets/images/teacake.webp";
+import mousse_cake from "../../../../assets/images/Tiramisu Mousse Cake.webp"
 
 // IMPORTANT: typeKey should match the type strings in your PRODUCTS array
 const bakedGoods = [
@@ -15,6 +16,7 @@ const bakedGoods = [
   { img: cookies, label: "Cookies", typeKey: "cookie" },
   { img: brownie, label: "Brownies", typeKey: "brownie" },
   { img: teacake, label: "Teacakes", typeKey: "teacake" },
+  {img: mousse_cake, label: "Mousse Cakes", typekey: "mousse"}
 ];
 
 export default function OurBakedGoodsSection() {

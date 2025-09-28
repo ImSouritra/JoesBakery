@@ -5,6 +5,7 @@ import slugify from "slugify";
 import { motion } from "framer-motion";
 import ProductImage from "../../../components/ProductImage"; // adjust this path if your components folder is in a different location
 import "./YouMayAlsoLike.css";
+import vegIcon from "../../../assets/images/veg-icon.svg"
 
 /*
  Props:
@@ -106,7 +107,7 @@ export default function YouMayAlsoLike({
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               placeholder={<div style={{ width: "100%", height: "100%", background: "#f4f4f4" }} />}
             />
-            {item.isVeg && <span className="favorites-badge">Veg</span>}
+            {item.is_veg && <span className="favorites-badge"><img src={vegIcon} alt="veg" className="favorites-badge-img"/></span>}
           </div>
 
           <div className="favorites-card-info">

@@ -5,6 +5,7 @@ import slugify from "slugify";
 import { PRODUCTS as STATIC_PRODUCTS } from "../../data/productData"; // keep as fallback
 import "./CategoryLandingPage.css";
 import ProductImage from "../../components/ProductImage";
+import vegIcon from "../../assets/images/veg-icon.svg"; // <-- added import
 
 export default function CategoryLandingPage({ products: propProducts }) {
   const { typeKey } = useParams();
@@ -16,8 +17,6 @@ export default function CategoryLandingPage({ products: propProducts }) {
   const [filterNewOnly, setFilterNewOnly] = useState(false);
 
   // Build the "allProducts" array:
-  // - If parent passed products (propProducts) use that
-  // - Otherwise merge STATIC_PRODUCTS + extras from localStorage
   const allProducts = useMemo(() => {
     if (Array.isArray(propProducts) && propProducts.length) return propProducts;
 
@@ -53,11 +52,9 @@ export default function CategoryLandingPage({ products: propProducts }) {
     }
 
     if (sortBy === "weight") {
-      // parse numeric weight (supports "500 GM", "1 KG" roughly)
       const parseW = (w) => {
         if (!w) return 0;
         const s = String(w).toUpperCase().trim();
-        // try to extract number then unit
         const m = s.match(/([\d.]+)/);
         if (!m) return 0;
         let n = parseFloat(m[1]);
@@ -90,8 +87,8 @@ export default function CategoryLandingPage({ products: propProducts }) {
       if (filterVeg === false && filterNonVeg === false) {
         // show all
       } else {
-        if (filterVeg && !filterNonVeg && !p.isVeg) return false;
-        if (!filterVeg && filterNonVeg && p.isVeg) return false;
+        if (filterVeg && !filterNonVeg && !p.is_veg) return false;
+        if (!filterVeg && filterNonVeg && p.is_veg) return false;
       }
 
       if (filterNewOnly) {
@@ -210,16 +207,40 @@ export default function CategoryLandingPage({ products: propProducts }) {
                   to={`/favorites/${slugify(p.name, { lower: true })}`}
                   className="product-link"
                 >
-                <div className="product-media">
+                  <div className="product-media">
                     <ProductImage
-                        imageKey={(p.images && p.images[0]) || p.img || ""}
-                        alt={p.name}
-                        className=""               /* optional CSS class */
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                        placeholder={<div style={{ background: "#f7f7f7", width: "100%", height: "100%" }} />}
+                      imageKey={(p.images && p.images[0]) || p.img || ""}
+                      alt={p.name}
+                      className="" /* optional CSS class */
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                      placeholder={
+                        <div
+                          style={{
+                            background: "#f7f7f7",
+                            width: "100%",
+                            height: "100%",
+                          }}
+                        />
+                      }
                     />
-                    {p.isVeg && <span className="product-badge veg">Veg</span>}
-                </div>
+
+                    {/* Veg badge now uses an icon in a small rounded wrapper */}
+                    {p.is_veg && (
+                      <span className="product-badge veg">
+                        <img
+                          src={vegIcon}
+                          alt="Vegetarian"
+                          className="product-badge-img"
+                        />
+                      </span>
+                    )}
+                  </div>
+
                   <div className="product-body">
                     <h3 className="product-name">{p.name}</h3>
                     {p.weight && <div className="product-meta">{p.weight}</div>}
