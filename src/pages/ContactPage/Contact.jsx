@@ -1,4 +1,3 @@
-// src/pages/Contact/Contact.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { API_BASE } from "../../config";
 import { useSearchParams } from "react-router-dom";
@@ -32,6 +31,7 @@ export default function Contact({ products = [] } = {}) {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    mobile: "",
     product: "", // selected product name
     quantity: 1,
     special: "",
@@ -78,15 +78,22 @@ export default function Contact({ products = [] } = {}) {
     const e = {};
     if (!form.name.trim()) e.name = "Please enter your name";
     if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Enter a valid email";
+
+    // Mobile validation: allow empty unless callMeBack is true; otherwise light validation
+    const phone = form.mobile.trim();
+    const phoneValid = phone === "" || /^\+?[0-9\s\-()]{7,20}$/.test(phone);
+    if (!phoneValid) e.mobile = "Enter a valid phone number (digits, +, - or spaces)";
+
     if (!form.product) e.product = "Select a product";
     if (!form.quantity || form.quantity < 1) e.quantity = "Quantity must be at least 1";
     if (form.callMeBack && !form.preferredTime.trim()) e.preferredTime = "Tell us a preferred time to call";
+    if (form.callMeBack && !phone) e.mobile = "Please provide a mobile number so we can call you";
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   // API_BASE comes from centralized config (src/config.js)
-
   async function handleSubmit(e) {
     e.preventDefault();
     setServerError("");
@@ -97,6 +104,7 @@ export default function Contact({ products = [] } = {}) {
     const payload = {
       name: form.name.trim(),
       email: form.email.trim(),
+      mobile: form.mobile.trim(),
       product: form.product,
       quantity: form.quantity,
       special: form.special.trim(),
@@ -137,6 +145,7 @@ export default function Contact({ products = [] } = {}) {
       setForm({
         name: "",
         email: "",
+        mobile: "",
         product: productOptions[0] || "",
         quantity: 1,
         special: "",
@@ -203,7 +212,21 @@ export default function Contact({ products = [] } = {}) {
             </label>
           </div>
 
-          <div className="row">
+          <div className="row two-cols">
+            <label className={`field ${errors.mobile ? "has-error" : ""}`}>
+              <span className="label">Mobile number</span>
+              <input
+                name="mobile"
+                type="tel"
+                value={form.mobile}
+                onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                placeholder="e.g. +91 98765 43210"
+                aria-invalid={!!errors.mobile}
+                className="animated-focus"
+              />
+              {errors.mobile ? <small className="error">{errors.mobile}</small> : <small className="hint">Optional — include country code if outside India</small>}
+            </label>
+
             <label className={`field ${errors.product ? "has-error" : ""}`}>
               <span className="label">Product you want to order</span>
 

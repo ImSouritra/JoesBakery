@@ -31,11 +31,11 @@ export default function Footer() {
           </div>
           <div className="footer-contact-row">
             <span className="footer-icon">&#x260E;</span>
-            <span>+20 4255500</span>
+            <span>+917003489784</span>
           </div>
           <div className="footer-contact-row">
             <span className="footer-icon">&#x2709;</span>
-            <span>joesbakery@gmail.com</span>
+            <span>hello.joesbakery@gmail.com</span>
           </div>
         </div>
         <div className="footer-col social">

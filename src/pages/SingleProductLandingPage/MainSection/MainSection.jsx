@@ -395,7 +395,7 @@ export default function MainSection({ product }) {
             {openAccordions["ingredients"] && <div className="pf-acc-body">{product.ingredients}</div>}
 
             <div className="pf-acc-item" onClick={() => toggleAccordion("storage")}>
-              <strong>Storage condition</strong>
+              <strong>Delivery Instruction</strong>
               <span>{openAccordions["storage"] ? "−" : "+"}</span>
             </div>
             {openAccordions["storage"] && <div className="pf-acc-body">{product.delivery_instructions}</div>}

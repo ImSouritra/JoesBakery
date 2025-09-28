@@ -6,6 +6,7 @@ import joesbakery_logo from "../assets/logo/joesbakery_logo.png";
 
 const MENU_ITEMS = [
   { to: "/", label: "Home" },
+  { to: "/best-sellers", label: "Best Sellers" },
   { to: "/category/cake", label: "Cakes" },
   { to: "/category/muffin", label: "Muffins" },
   { to: "/category/brownie", label: "Brownies" },
