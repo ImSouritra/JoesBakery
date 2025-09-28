@@ -170,7 +170,8 @@
   .baked-carousel {
     justify-content: flex-start;  /* line up items from left on small screens */
     gap: 1rem;                    /* tighter gap on mobile */
-    padding: 0 4vw;               /* keep safe side padding so items aren't flush to the edge */
+    padding: 0 4vw;
+    padding-left: 0;               /* keep safe side padding so items aren't flush to the edge */
     scroll-padding-inline: 4vw;
     overflow-x: auto;
   }
