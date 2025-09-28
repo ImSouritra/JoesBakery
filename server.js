@@ -1,4 +1,3 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
@@ -538,34 +537,98 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+/* -------------------- API: Contact / Order -------------------- */
+/*
+  Changes:
+  - Accepts `mobile` in request body.
+  - Validates mobile format (light validation) and enforces mobile when callMeBack is true.
+  - Includes mobile in email body and server logs.
+*/
 app.post("/api/contact", async (req, res) => {
-  const { name, email, product, quantity, special, message, callMeBack, preferredTime } =
-    req.body;
-  if (!email || !name) return res.status(400).json({ message: "Missing required" });
+  // Accept JSON body with fields:
+  // { name, email, mobile, product, quantity, special, message, callMeBack, preferredTime }
+  const {
+    name,
+    email,
+    mobile = "",
+    product,
+    quantity,
+    special,
+    message,
+    callMeBack,
+    preferredTime,
+  } = req.body || {};
+
+  // Basic required checks
+  if (!email || !String(email).trim() || !name || !String(name).trim()) {
+    return res.status(400).json({ message: "Missing required fields: name and email are required." });
+  }
+
+  // Normalize booleanish callMeBack
+  const wantsCall = !!(
+    callMeBack === true ||
+    callMeBack === "true" ||
+    callMeBack === "1" ||
+    callMeBack === 1
+  );
+
+  // Light phone validation: allow +, digits, spaces, hyphen, parentheses; length 7-20 chars
+  const phone = String(mobile || "").trim();
+  const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+  if (phone && !phoneRegex.test(phone)) {
+    return res.status(400).json({ message: "Invalid mobile number format." });
+  }
+
+  // If user requested a callback, ensure mobile is present
+  if (wantsCall && !phone) {
+    return res.status(400).json({ message: "Mobile number is required when requesting a callback." });
+  }
 
   try {
+    // Compose email text (include mobile)
+    const mailText = `
+Name: ${name}
+Email: ${email}
+Mobile: ${phone || "(not provided)"}
+Product: ${product || "(none)"}
+Quantity: ${quantity || "(not provided)"}
+Call me back: ${wantsCall}
+Preferred time: ${preferredTime || "(not provided)"}
+Special instructions: ${special || "(none)"}
+Message: ${message || "(none)"}
+Sent at: ${new Date().toISOString()}
+    `;
+
     const mailOptions = {
       from: email,
       to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER,
-      subject: `Contact/order from ${name}`,
-      text: `
-Name: ${name}
-Email: ${email}
-Product: ${product}
-Quantity: ${quantity}
-Call me back: ${callMeBack}
-PreferredTime: ${preferredTime}
-Special: ${special}
-Message: ${message}
-      `,
+      subject: `Contact/order from ${name}${phone ? " — " + phone : ""}`,
+      text: mailText,
     };
+
+    // Log to server console for traceability
+    console.log("[CONTACT] incoming request:", {
+      name,
+      email,
+      mobile: phone,
+      product,
+      quantity,
+      callMeBack: wantsCall,
+      preferredTime,
+    });
+
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail(mailOptions);
+      console.log("[CONTACT] email sent");
+    } else {
+      console.warn("[CONTACT] SMTP not configured — skipping sendMail, but returning success.");
+      console.log("[CONTACT] would send:", mailOptions);
     }
-    res.json({ ok: true });
+
+    return res.json({ ok: true });
   } catch (err) {
     console.error("Email failed:", err);
-    res.status(500).json({ ok: false, message: "Email failed" });
+    return res.status(500).json({ ok: false, message: "Email failed" });
   }
 });
 
