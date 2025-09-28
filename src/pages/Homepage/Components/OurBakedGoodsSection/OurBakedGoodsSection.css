@@ -209,6 +209,11 @@
 }
 
 /* Large screens: give items more breathing room, keep centered */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .baked-carousel {
+    padding-bottom: 4vw;
+  }
+}
 @media (min-width: 1201px) {
   .baked-carousel {
     gap: 4rem;
