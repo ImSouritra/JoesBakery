@@ -16,7 +16,7 @@ const bakedGoods = [
   { img: cookies, label: "Cookies", typeKey: "cookie" },
   { img: brownie, label: "Brownies", typeKey: "brownie" },
   { img: teacake, label: "Teacakes", typeKey: "teacake" },
-  {img: mousse_cake, label: "Mousse Cakes", typekey: "mousse"}
+  { img: mousse_cake, label: "Mousse Cakes", typeKey: "mousse" },
 ];
 
 export default function OurBakedGoodsSection() {
