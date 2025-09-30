@@ -6,7 +6,8 @@ const { Pool } = require("pg");
 const slugify = require("slugify");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-const nodemailer = require("nodemailer");
+// MailerSend SDK
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
 
 const PORT = process.env.PORT || 5000;
 
@@ -65,16 +66,8 @@ const upload = multer({
 const app = express();
 
 /* -------------------- Dynamic CORS Configuration -------------------- */
-// Supports:
-// - CORS_ORIGIN unset => allow all (*)
-// - Single origin value
-// - Comma separated list of origins
-// - Trailing slash normalization
-// - Wildcard "*" inside the list means allow all
-// - Optional CORS_LOG=true to log decisions
 function buildAllowedOrigins(raw) {
   if (!raw || raw.trim() === "") return ["*"]; // allow all
-  // split by comma, trim, drop empties
   const parts = raw
     .split(",")
     .map((p) => p.trim())
@@ -86,9 +79,7 @@ function buildAllowedOrigins(raw) {
 function normalizeOrigin(origin) {
   if (!origin) return origin;
   try {
-    // If it's just '*', keep as is
     if (origin === "*") return origin;
-    // Remove trailing slash (except protocol-only like "http://localhost:3000/")
     return origin.replace(/\/$/, "");
   } catch {
     return origin;
@@ -101,7 +92,6 @@ const logCors = /^true$/i.test(process.env.CORS_LOG || "");
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Some user agents (e.g., curl, same-origin) may have no origin header
     if (!origin) {
       if (logCors) console.log("[CORS] No Origin header -> allowed (non-browser or same-origin)");
       return callback(null, true);
@@ -120,7 +110,7 @@ const corsOptions = {
     }
     return callback(new Error("Not allowed by CORS"));
   },
-  credentials: false, // adjust to true if you later use cookies/auth
+  credentials: false,
 };
 
 app.use(cors(corsOptions));
@@ -301,13 +291,6 @@ app.delete("/api/products/:id", async (req, res) => {
 });
 
 /* -------------------- API: Update Product -------------------- */
-// Accepts JSON or multipart/form-data (for new images)
-// Route: PUT /api/products/:id
-// Body fields (all optional except at least one must exist):
-//  name, isVeg, weight, type (JSON array or comma string), description, ingredients, delivery_instructions
-//  removeImageUrls: JSON array of existing image URLs to remove
-//  imageUrls: JSON array of external image URLs to add
-//  images[] (multipart files) to upload to Supabase
 app.put("/api/products/:id", upload.array("images", 8), async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ error: "Invalid id" });
@@ -370,8 +353,6 @@ app.put("/api/products/:id", upload.array("images", 8), async (req, res) => {
     }
 
     if (fields.length) {
-      // NOTE: original code tried to set updated_at = NOW(), but column does not exist in current schema.
-      // If you later add an updated_at TIMESTAMP column, reintroduce: , updated_at = NOW()
       const sql = `UPDATE products SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
       values.push(id);
       const updatedRes = await query(sql, values);
@@ -528,25 +509,27 @@ app.get("/api/products/:slug", async (req, res) => {
   }
 });
 
-/* -------------------- Mailer -------------------- */
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+/* -------------------- MailerSend (API) -------------------- */
+let mailerSendClient = null;
+if (process.env.MAILERSEND_API_KEY) {
+  mailerSendClient = new MailerSend({ apiKey: process.env.MAILERSEND_API_KEY });
+  console.log("[MAIL] MailerSend client configured");
+} else {
+  console.warn("[MAIL] MAILERSEND_API_KEY not set. Email sending disabled.");
+}
 
-/* -------------------- API: Contact / Order -------------------- */
-/*
-  Changes:
-  - Accepts `mobile` in request body.
-  - Validates mobile format (light validation) and enforces mobile when callMeBack is true.
-  - Includes mobile in email body and server logs.
-*/
+// helper functions
+function sanitize(s) {
+  if (s === undefined || s === null) return "";
+  return String(s).trim();
+}
+function escapeHtml(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* -------------------- API: Contact / Order (MailerSend) -------------------- */
 app.post("/api/contact", async (req, res) => {
-  // Accept JSON body with fields:
-  // { name, email, mobile, product, quantity, special, message, callMeBack, preferredTime }
   const {
     name,
     email,
@@ -585,56 +568,80 @@ app.post("/api/contact", async (req, res) => {
   }
 
   try {
-    // Compose email text (include mobile)
-    const mailText = `
-Name: ${name}
-Email: ${email}
-Mobile: ${phone || "(not provided)"}
-Product: ${product || "(none)"}
-Quantity: ${quantity || "(not provided)"}
-Call me back: ${wantsCall}
-Preferred time: ${preferredTime || "(not provided)"}
-Special instructions: ${special || "(none)"}
-Message: ${message || "(none)"}
-Sent at: ${new Date().toISOString()}
-    `;
-
-    const mailOptions = {
-      from: email,
-      to: process.env.RECEIVER_EMAIL || process.env.SMTP_USER,
-      subject: `Contact/order from ${name}${phone ? " — " + phone : ""}`,
-      text: mailText,
+    const sanitized = {
+      name: sanitize(name),
+      email: sanitize(email),
+      phone: phone,
+      product: sanitize(product),
+      quantity: sanitize(quantity),
+      special: sanitize(special),
+      message: sanitize(message),
+      wantsCall,
+      preferredTime: sanitize(preferredTime),
     };
 
-    // Log to server console for traceability
+    const textFirstLine = `New order from ${sanitized.name}${sanitized.product ? ` — ${sanitized.product}` : ""}`;
+    const mailText = `${textFirstLine}\n\n${[
+      `Name: ${sanitized.name}`,
+      `Email: ${sanitized.email}`,
+      `Mobile: ${sanitized.phone || "(not provided)"}`,
+      `Product: ${sanitized.product || "(none)"}`,
+      `Quantity: ${sanitized.quantity || "(not provided)"}`,
+      `Call me back: ${sanitized.wantsCall}`,
+      `Preferred time: ${sanitized.preferredTime || "(not provided)"}`,
+      `Special instructions: ${sanitized.special || "(none)"}`,
+      `Message: ${sanitized.message || "(none)"}`,
+      `Sent at: ${new Date().toISOString()}`,
+    ].join("\n")}`;
+
+    // MailerSend config
+    const FROM_EMAIL = process.env.MAILERSEND_SENDER || process.env.RECEIVER_EMAIL || "no-reply@localhost";
+    const FROM_NAME = process.env.MAILERSEND_FROM_NAME || "Your Bakery";
+    const TO_EMAIL = process.env.RECEIVER_EMAIL || FROM_EMAIL;
+    const subject = `New order from ${sanitized.name}${sanitized.phone ? " — " + sanitized.phone : ""}`;
+    const htmlBody = `<h2>New order from ${escapeHtml(sanitized.name)}</h2>
+      <p><strong>Email:</strong> ${escapeHtml(sanitized.email)}<br/><strong>Mobile:</strong> ${escapeHtml(sanitized.phone || "(not provided)")}</p>
+      <p><strong>Product:</strong> ${escapeHtml(sanitized.product || "(none)")}</p>
+      <pre style="white-space:pre-wrap">${escapeHtml(mailText)}</pre>`;
+
     console.log("[CONTACT] incoming request:", {
-      name,
-      email,
-      mobile: phone,
-      product,
-      quantity,
-      callMeBack: wantsCall,
-      preferredTime,
+      name: sanitized.name,
+      email: sanitized.email,
+      mobile: sanitized.phone,
+      product: sanitized.product,
+      quantity: sanitized.quantity,
+      callMeBack: sanitized.wantsCall,
+      preferredTime: sanitized.preferredTime,
     });
 
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      await transporter.sendMail(mailOptions);
-      console.log("[CONTACT] email sent");
-    } else {
-      console.warn("[CONTACT] SMTP not configured — skipping sendMail, but returning success.");
-      console.log("[CONTACT] would send:", mailOptions);
+    if (!mailerSendClient) {
+      console.warn("[CONTACT] MailerSend not configured — skipping send (but returning success).");
+      console.log("[CONTACT] would send:", { FROM_EMAIL, TO_EMAIL, subject, mailText });
+      return res.json({ ok: true });
     }
 
+    // Build and send email via MailerSend SDK
+    const from = new Sender(FROM_EMAIL, FROM_NAME);
+    const to = [ new Recipient(TO_EMAIL) ];
+    const params = new EmailParams()
+      .setFrom(from)
+      .setTo(to)
+      .setReplyTo(new Sender(sanitized.email || FROM_EMAIL, sanitized.name || FROM_NAME))
+      .setSubject(subject)
+      .setText(mailText)
+      .setHtml(htmlBody);
+
+    const resp = await mailerSendClient.email.send(params);
+    console.log("[CONTACT] MailerSend send response:", resp && resp.data ? resp.data : resp);
     return res.json({ ok: true });
   } catch (err) {
-    console.error("Email failed:", err);
+    console.error("MailerSend send failed:", err && err.response ? err.response.data : err);
     return res.status(500).json({ ok: false, message: "Email failed" });
   }
 });
 
 /* -------------------- Frontend Removed -------------------- */
 // This repository now serves only the JSON API. No static frontend build is delivered.
-// If you reintroduce a client build later, add static serving middleware here.
 
 /* -------------------- Start Server -------------------- */
 app.listen(PORT, () => {
