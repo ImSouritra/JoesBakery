@@ -1,0 +1,61 @@
+.privacy-policy {
+  padding: clamp(2rem, 4vw, 3.5rem) 1.25rem 4rem;
+  background: #fafafa;
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
+  line-height: 1.6;
+  color: #222;
+}
+
+.privacy-policy .legal-container {
+  max-width: 960px;
+  margin: 0 auto;
+  background: #fff;
+  padding: clamp(1.75rem, 3vw, 2.5rem) clamp(1.25rem, 2.5vw, 2.5rem);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px -6px rgba(0,0,0,0.06), 0 2px 8px -2px rgba(0,0,0,0.04);
+}
+
+.privacy-policy h1 {
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  letter-spacing: -.5px;
+}
+
+.privacy-policy h2 {
+  margin-top: 2.5rem;
+  font-size: clamp(1.25rem, 2.8vw, 1.55rem);
+  letter-spacing: -.25px;
+  position: relative;
+  padding-top: .5rem;
+}
+
+.privacy-policy h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg,#ff9f43,#ff6f3c);
+  border-radius: 3px;
+}
+
+.privacy-policy p { margin: 1rem 0; }
+.privacy-policy ul { padding-left: 1.25rem; margin: .75rem 0 1.25rem; }
+.privacy-policy li { margin: .35rem 0; }
+
+.privacy-policy .last-updated { margin-top: -.25rem; font-size: .9rem; color: #666; }
+
+.privacy-policy address { font-style: normal; line-height: 1.5; background:#f7f9fc; padding: .875rem 1rem; border-left: 4px solid #ff9f43; border-radius: 8px; }
+
+.privacy-policy a { color: #ff6f3c; text-decoration: none; }
+.privacy-policy a:hover { text-decoration: underline; }
+
+@media (prefers-color-scheme: dark) {
+  .privacy-policy { background: #121212; color:#e9e9e9; }
+  .privacy-policy .legal-container { background:#1d1f22; box-shadow: 0 8px 30px -8px rgba(0,0,0,.6); }
+  .privacy-policy h2::before { background: linear-gradient(90deg,#ffb16b,#ff824f); }
+  .privacy-policy address { background:#23262a; border-left-color:#ffb16b; }
+  .privacy-policy a { color:#ff9f6a; }
+}

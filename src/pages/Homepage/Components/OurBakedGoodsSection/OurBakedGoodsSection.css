@@ -61,7 +61,7 @@
 /* Carousel: full-width and centered on desktop */
 .baked-carousel {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 3.2rem;
   overflow-x: auto;

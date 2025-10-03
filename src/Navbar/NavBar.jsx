@@ -8,7 +8,7 @@ const MENU_ITEMS = [
   { to: "/", label: "Home" },
   { to: "/best-sellers", label: "Best Sellers" },
   { to: "/category/cake", label: "Cakes" },
-  { to: "/category/muffin", label: "Muffins" },
+  { to: "/category/cup_cake", label: "Cup Cakes" },
   { to: "/category/brownie", label: "Brownies" },
   { to: "/category/cookie", label: "Cookies" },
   { to: "/category/teacake", label: "Teacakes" },

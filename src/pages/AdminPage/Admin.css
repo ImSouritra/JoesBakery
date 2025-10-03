@@ -233,4 +233,10 @@
   .external-urls { display:flex; flex-direction:column; gap:6px; }
   .external-urls small { font-size:0.65rem; color:#666; }
   @media (max-width:640px){ .edit-row { flex-direction:column; } .edit-modal { padding:24px 22px 28px; } }
+  /* Type pills (reused from AddProduct) */
+  .types-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .type-pill { border:1px solid #d5d8e6; background:#ffffff; padding:6px 12px; border-radius:30px; font-size:0.7rem; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; transition:all .18s ease; color:#2d3555; }
+  .type-pill:hover { background:#f2f5ff; border-color:#b9c2e4; }
+  .type-pill.active { background:#2d3a8c; color:#fff; border-color:#2d3a8c; box-shadow:0 4px 14px -4px rgba(45,58,140,0.55); }
+  .type-pill.active:hover { background:#253071; }
   

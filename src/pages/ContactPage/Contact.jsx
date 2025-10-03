@@ -16,7 +16,7 @@ export default function Contact({ products = [] } = {}) {
             "New York Cheesecake",
             "Dessert Chocolate Fudge",
             "Millet Cookie",
-            "Chocolate Muffin",
+            "Chocolate Cup Cake",
             "Vanilla Teacake",
           ];
 

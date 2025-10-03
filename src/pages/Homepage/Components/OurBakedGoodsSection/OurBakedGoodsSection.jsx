@@ -3,7 +3,7 @@ import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import "./OurBakedGoodsSection.css";
 import cakeImg from "../../../../assets/images/birthday_cake.JPG";
-import muffin from "../../../../assets/images/muffin.JPG";
+import muffin from "../../../../assets/images/cup_cake.JPG";
 import cookies from "../../../../assets/images/cookies.webp";
 import brownie from "../../../../assets/images/brownie.webp";
 import teacake from "../../../../assets/images/teacake.webp";
@@ -12,7 +12,7 @@ import mousse_cake from "../../../../assets/images/Tiramisu Mousse Cake.webp"
 // IMPORTANT: typeKey should match the type strings in your PRODUCTS array
 const bakedGoods = [
   { img: cakeImg, label: "Signature Cakes", typeKey: "cake" },
-  { img: muffin, label: "Muffins", typeKey: "muffin" },
+  { img: muffin, label: "Cup Cakes", typeKey: "cup_cake" }, // renamed from Muffins
   { img: cookies, label: "Cookies", typeKey: "cookie" },
   { img: brownie, label: "Brownies", typeKey: "brownie" },
   { img: teacake, label: "Teacakes", typeKey: "teacake" },

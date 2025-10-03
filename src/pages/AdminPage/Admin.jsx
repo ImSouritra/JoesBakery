@@ -194,6 +194,9 @@ export default function Admin() {
   }, []);
 
   // Modal editing functions
+  const PREDEFINED_TYPES = ["classic","new","healthy","cake","brownie","cookie","cup_cake","mousse","teacake","bestseller"];
+  const TYPE_LABELS = { cup_cake: "Cup Cakes" };
+
   const openEdit=useCallback(p=>{
     setEditing(p);
     setForm({
@@ -203,6 +206,8 @@ export default function Admin() {
       ingredients:p.ingredients||'',
       delivery_instructions:p.delivery_instructions||'',
       isVeg: !!p.is_veg,
+      // keep an internal array for selected types; store also as string for legacy reference if needed
+      typeList: Array.isArray(p.type)? p.type.filter(Boolean): (p.type? [p.type]: []),
       type: Array.isArray(p.type)? p.type.join(', '): (p.type||'')
     });
     setRemoveImages([]);
@@ -214,6 +219,15 @@ export default function Admin() {
   const closeEdit=()=>{ setEditing(null); };
 
   function updateField(k,v){ setForm(f=>({...f,[k]:v})); }
+
+  function toggleTypeEdit(t){
+    setForm(f=>{
+      const list = Array.isArray(f.typeList)? [...f.typeList]: [];
+      const idx = list.indexOf(t);
+      if(idx>-1){ list.splice(idx,1); } else { list.push(t); }
+      return { ...f, typeList:list, type:list.join(', ') };
+    });
+  }
 
   function toggleRemove(img){ setRemoveImages(arr=> arr.includes(img)? arr.filter(i=>i!==img): [...arr,img]); }
 
@@ -331,9 +345,14 @@ export default function Admin() {
             </div>
             <div className='edit-row'>
               <div className='field'>
-                <label>Types (comma)</label>
-                <input value={form.type} onChange={e=>updateField('type', e.target.value)} />
-                <div className='edit-tags-hint'>Example: chocolate, premium, eggless</div>
+                <label>Types</label>
+                <div className='types-row'>
+                  {PREDEFINED_TYPES.map(t=>{
+                    const active = Array.isArray(form.typeList) && form.typeList.includes(t);
+                    return <button type='button' key={t} className={`type-pill ${active? 'active':''}`} onClick={()=>toggleTypeEdit(t)}>{TYPE_LABELS[t]||t}</button>;
+                  })}
+                </div>
+                <div className='edit-tags-hint'>Select one or more categories.</div>
               </div>
               <div className='field'>
                 <label>Veg?</label>

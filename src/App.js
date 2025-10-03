@@ -11,6 +11,8 @@ import CategoryLandingPage from "./pages/CategoryLandingPage/CategoryLandingPage
 import Admin from "./pages/AdminPage/Admin";
 import Contact from "./pages/ContactPage/Contact";
 import BestSellersPage from "./pages/BestSellersPage/BestSellersPage";
+import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
+import TermsAndConditions from "./pages/Legal/TermsAndConditions";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -56,6 +58,9 @@ function App() {
           <Route path="/admin/add-product" element={<Admin onProductAdd={handleProductAdd} />} />
           <Route path="/contact" element={<Contact products={products} />} />
           <Route path="/best-sellers" element={<BestSellersPage products={products} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
         </Routes>
         <Footer />
       </Router>

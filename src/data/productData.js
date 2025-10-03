@@ -2,7 +2,7 @@
 import cheesecake from "../assets/images/birthday_cake.JPG";
 import chocolateFudgeBrownie from "../assets/images/brownie.webp";
 import cookies from "../assets/images/cookies.webp";
-import muffin from "../assets/images/muffin.JPG";
+import muffin from "../assets/images/cup_cake.JPG";
 import teacake from "../assets/images/teacake.webp";
 
 export const TABS = [
@@ -64,11 +64,11 @@ export const PRODUCTS = [
   },
   {
     images: [muffin],
-    name: "Chocolate Muffin",
+    name: "Chocolate Cup Cake",
     isVeg: true,
     weight: "700 GM",
-    type: ["classic", "healthy", "muffin"],
-    description: "Soft and fluffy chocolate muffins, perfect for breakfast.",
+    type: ["classic", "healthy", "cup_cake"],
+    description: "Soft and fluffy chocolate cup cakes, perfect for breakfast.",
     ingredients: "Flour, cocoa powder, sugar, eggs, butter, baking powder.",
     delivery_instructions: "Store at room temperature; consume within 3 days."
   },

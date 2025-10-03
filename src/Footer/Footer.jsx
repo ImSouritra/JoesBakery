@@ -12,11 +12,13 @@ const quickLinks = [
   { label: "Home", href: "/" },
   { label: "Cakes", href: "/category/cake" },
   { label: "Brownies", href: "/category/brownie" },
-  { label: "Muffins", href: "/category/muffin" },
+  { label: "Cup Cakes", href: "/category/cup_cake" },
   { label: "Cookies", href: "/category/cookie" },
   { label: "Teacakes", href: "/category/teacake" },
   { label: "Best Sellers", href: "/best-sellers" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms & Conditions", href: "/terms-and-conditions" },
 ];
 
 export default function Footer() {

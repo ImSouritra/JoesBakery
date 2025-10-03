@@ -4,8 +4,13 @@ import { API_BASE } from "../../../config";
 import "./AddProduct.css";
 
 const PREDEFINED_TYPES = [
-  "classic","new","healthy","cake","brownie","cookie","muffin","mousse","teacake","bestseller"
+  "classic","new","healthy","cake","brownie","cookie","cup_cake","mousse","teacake","bestseller"
 ];
+
+// Human-friendly labels (fallback to raw value if missing)
+const TYPE_LABELS = {
+  cup_cake: "Cup Cakes",
+};
 
 export default function AddProduct({ onProductAdd }) {
   const [form, setForm] = useState({
@@ -179,7 +184,7 @@ export default function AddProduct({ onProductAdd }) {
                   onClick={() => toggleType(t)}
                   className={`type-pill ${active ? "active" : ""}`}
                 >
-                  {t}
+                  {TYPE_LABELS[t] || t}
                 </button>
               );
             })}

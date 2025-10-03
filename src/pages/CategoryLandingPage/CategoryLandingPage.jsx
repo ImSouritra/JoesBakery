@@ -104,12 +104,19 @@ export default function CategoryLandingPage({ products: propProducts }) {
 
   if (!typeKey) return null;
 
-  const prettyTitle =
-    typeKey.toLowerCase() === "all"
-      ? "All Products"
-      : typeKey.charAt(0).toUpperCase() +
-        typeKey.slice(1) +
-        (typeKey.endsWith("s") ? "" : "s");
+  let prettyTitle;
+  const lowerKey = typeKey.toLowerCase();
+  if (lowerKey === "all") {
+    prettyTitle = "All Products";
+  } else if (lowerKey === "cup_cake") {
+    // Special human friendly title for cup_cake route
+    prettyTitle = "Cup Cakes";
+  } else {
+    prettyTitle =
+      typeKey.charAt(0).toUpperCase() +
+      typeKey.slice(1) +
+      (typeKey.endsWith("s") ? "" : "s");
+  }
 
   return (
     <div className="cat-root">
@@ -121,8 +128,9 @@ export default function CategoryLandingPage({ products: propProducts }) {
           </div>
           <h1 className="cat-title">{prettyTitle}</h1>
           <p className="cat-sub">
-            Delicious {prettyTitle.toLowerCase()} freshly made — choose your
-            favorite.
+            {lowerKey === "cup_cake"
+              ? "Delicious Cup Cakes freshly made — choose your favorite."
+              : `Delicious ${prettyTitle.toLowerCase()} freshly made — choose your favorite.`}
           </p>
         </div>
       </div>
