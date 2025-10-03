@@ -14,16 +14,13 @@ const COMMON_FAQ = [
   },
 ];
 
-
 export const SEO_COLLECTIONS = [
   {
     slug: "best-cakes-in-bengaluru",
     h1: "Best Cakes in Bengaluru (Fresh & Artisanal)",
-    subtitle: "Hand-picked favorites loved by our Bengaluru customers.",
+    subtitle:
+      "Discover Bengaluru’s favorite cakes – fresh artisanal birthday cakes, wedding cakes, and gourmet desserts crafted with premium ingredients.",
     productTypes: ["cake"],
-    productSlugs: [
-      // "new-york-cheesecake", // leave commented or include if you want reference only
-    ],
     meta: {
       title: "Best Cakes in Bengaluru | Fresh Artisanal Cakes | Joe's Bakery",
       description:
@@ -41,7 +38,8 @@ export const SEO_COLLECTIONS = [
   {
     slug: "best-cup-cakes-in-bengaluru",
     h1: "Best Cup Cakes in Bengaluru",
-    subtitle: "Moist, flavorful & baked in small batches.",
+    subtitle:
+      "Moist, rich and delicious cupcakes baked in small batches. Perfect for birthdays, office parties, kids’ treats and premium gifting in Bengaluru.",
     productTypes: ["cup_cake"],
     meta: {
       title: "Best Cup Cakes in Bengaluru | Gourmet Cup Cakes | Joe's Bakery",
@@ -50,14 +48,18 @@ export const SEO_COLLECTIONS = [
     },
     faq: [
       ...COMMON_FAQ,
-      { q: "Do you customize cup cakes?", a: "Yes, minimal frosting themes & edible tags on pre-order (24–48 hrs)." },
+      {
+        q: "Do you customize cup cakes?",
+        a: "Yes, minimal frosting themes & edible tags on pre-order (24–48 hrs).",
+      },
     ],
   },
 
   {
     slug: "best-diwali-gifts-in-bengaluru",
     h1: "Best Diwali Bakery Gifts in Bengaluru",
-    subtitle: "Festive treats & curated sweet boxes for your loved ones.",
+    subtitle:
+      "Celebrate Diwali with gourmet bakery gifts in Bengaluru – festive hampers, cookies, brownies, and luxury sweet boxes crafted for family and corporate gifting.",
     productTypes: ["cookie", "brownie", "healthy", "cup_cake"],
     meta: {
       title: "Best Diwali Gifts in Bengaluru | Premium Bakery Gift Ideas",
@@ -66,17 +68,21 @@ export const SEO_COLLECTIONS = [
     },
     faq: [
       ...COMMON_FAQ,
-      { q: "Can I bulk order corporate gift boxes?", a: "Yes, reach out via the contact page for bulk pricing & customization." },
+      {
+        q: "Can I bulk order corporate gift boxes?",
+        a: "Yes, reach out via the contact page for bulk pricing & customization.",
+      },
     ],
   },
 
-// --- NEW HIGH-TRAFFIC COLLECTIONS ADDED BELOW ---
+  // --- NEW HIGH-TRAFFIC COLLECTIONS ADDED BELOW ---
 
   {
     slug: "eggless-cakes-delivery-bengaluru",
     h1: "Premium Eggless & Vegetarian Cakes in Bengaluru",
-    subtitle: "Freshly baked, 100% vegetarian cakes without compromising on flavor or texture.",
-    productTypes: ["mousse", "cake",],
+    subtitle:
+      "Order 100% vegetarian and eggless cakes in Bengaluru – perfect for birthdays, anniversaries, and celebrations with fresh, flavorful recipes.",
+    productTypes: ["mousse", "cake"],
     meta: {
       title: "Eggless Cakes Delivery in Bengaluru | Vegetarian Cakes | Joe's Bakery",
       description:
@@ -94,7 +100,8 @@ export const SEO_COLLECTIONS = [
   {
     slug: "gourmet-mousse-cakes-bengaluru",
     h1: "Gourmet Mousse Cakes & Pastries Delivery in Bengaluru",
-    subtitle: "Silky smooth chocolate mousse, decadent Nutella, and classic Tiramisu cakes.",
+    subtitle:
+      "Indulge in silky mousse cakes – Chocolate Nutella, Tiramisu, fruit mousse, and gourmet pastries. Fresh, chilled, and delivered across Bengaluru.",
     productTypes: ["mousse", "tub_cake"],
     meta: {
       title: "Best Mousse Cakes in Bengaluru | Tiramisu & Chocolate Mousse | Joe's Bakery",
@@ -109,11 +116,12 @@ export const SEO_COLLECTIONS = [
       },
     ],
   },
-  
+
   {
     slug: "fudgy-brownies-and-cookies-bengaluru",
     h1: "Fudgy Brownies & Gourmet Cookies Delivery in Bengaluru",
-    subtitle: "Signature chewy brownies, chunky cookies, and specialty dessert tubs.",
+    subtitle:
+      "Enjoy our signature fudgy brownies, chewy cookies, and dessert boxes. Perfect for gifting, celebrations, and everyday indulgence in Bengaluru.",
     productTypes: ["brownie", "cookie", "mousse"],
     meta: {
       title: "Fudgy Brownies & Gourmet Cookies in Bengaluru | Joe's Bakery",
@@ -132,7 +140,8 @@ export const SEO_COLLECTIONS = [
   {
     slug: "premium-cheesecakes-delivery-bengaluru",
     h1: "Best Cheesecakes Delivery in Bengaluru (Baked & No-Bake)",
-    subtitle: "New York, Blueberry, and specialty flavor cheesecakes for every occasion.",
+    subtitle:
+      "New York style, blueberry, and specialty cheesecakes baked fresh. Perfect for birthdays, anniversaries, or weekend indulgence in Bengaluru.",
     productTypes: ["cake"],
     meta: {
       title: "Cheesecake Delivery in Bengaluru | New York Style & Baked Cheesecake | Joe's Bakery",
@@ -147,11 +156,12 @@ export const SEO_COLLECTIONS = [
       },
     ],
   },
-  
+
   {
     slug: "classic-tea-cakes-and-loaves-bengaluru",
     h1: "Classic Tea Cakes and Loaves in Bengaluru",
-    subtitle: "Perfectly moist vanilla, marble, and fruit loaves for tea time.",
+    subtitle:
+      "Moist vanilla loaf, marble cake, and fruit tea cakes crafted for everyday snacking, tea-time gatherings, and gifting across Bengaluru.",
     productTypes: ["teacake"],
     meta: {
       title: "Tea Cakes & Loaves Delivery in Bengaluru | Vanilla & Plum Cake | Joe's Bakery",
@@ -166,7 +176,6 @@ export const SEO_COLLECTIONS = [
       },
     ],
   },
-
 ];
 
 // Helper to get a collection by slug
