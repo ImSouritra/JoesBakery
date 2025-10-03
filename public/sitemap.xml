@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Auto-generated static sitemap. For dynamic product list, consider server-side generation. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Core pages -->
   <url><loc>https://www.joesbakery.in/</loc><priority>1.0</priority></url>
   <url><loc>https://www.joesbakery.in/contact</loc><priority>0.6</priority></url>
   <url><loc>https://www.joesbakery.in/best-sellers</loc><priority>0.8</priority></url>
   <url><loc>https://www.joesbakery.in/privacy-policy</loc><priority>0.3</priority></url>
   <url><loc>https://www.joesbakery.in/terms-and-conditions</loc><priority>0.3</priority></url>
 
-  <!-- Category landing pages -->
   <url><loc>https://www.joesbakery.in/category/all</loc></url>
   <url><loc>https://www.joesbakery.in/category/cake</loc></url>
   <url><loc>https://www.joesbakery.in/category/cup_cake</loc></url>
@@ -19,19 +16,16 @@
   <url><loc>https://www.joesbakery.in/category/classic</loc></url>
   <url><loc>https://www.joesbakery.in/category/new</loc></url>
 
-  <!-- SEO Guide pages -->
   <url><loc>https://www.joesbakery.in/guide/best-cakes-in-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/best-cup-cakes-in-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/best-diwali-gifts-in-bengaluru</loc><priority>0.9</priority></url>
 
-  <!-- NEW SEO COLLECTIONS -->
   <url><loc>https://www.joesbakery.in/guide/eggless-cakes-delivery-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/gourmet-mousse-cakes-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/fudgy-brownies-and-cookies-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/premium-cheesecakes-delivery-bengaluru</loc><priority>0.9</priority></url>
   <url><loc>https://www.joesbakery.in/guide/classic-tea-cakes-and-loaves-bengaluru</loc><priority>0.9</priority></url>
 
-  <!-- Product detail pages -->
   <url><loc>https://www.joesbakery.in/product/upside-down-plum-cake</loc></url>
   <url><loc>https://www.joesbakery.in/product/dark-chocolate-hazelnut-cookie</loc></url>
   <url><loc>https://www.joesbakery.in/product/joes-classic-lotus-biscoffe-cookie</loc></url>
