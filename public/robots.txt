@@ -10,4 +10,4 @@ Allow: /
 
 # If you have staging environments, add: User-agent: * Disallow: / (on staging build)
 
-Sitemap: https://www.example.com/sitemap.xml
+Sitemap: https://www.joesbakery.in/sitemap.xml

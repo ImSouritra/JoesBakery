@@ -2,36 +2,56 @@
 <!-- Auto-generated static sitemap. For dynamic product list, consider server-side generation. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Core pages -->
-  <url><loc>https://www.example.com/</loc><priority>1.0</priority></url>
-  <url><loc>https://www.example.com/contact</loc><priority>0.6</priority></url>
-  <url><loc>https://www.example.com/best-sellers</loc><priority>0.8</priority></url>
-  <url><loc>https://www.example.com/privacy-policy</loc><priority>0.3</priority></url>
-  <url><loc>https://www.example.com/terms-and-conditions</loc><priority>0.3</priority></url>
+  <url><loc>https://www.joesbakery.in/</loc><priority>1.0</priority></url>
+  <url><loc>https://www.joesbakery.in/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://www.joesbakery.in/best-sellers</loc><priority>0.8</priority></url>
+  <url><loc>https://www.joesbakery.in/privacy-policy</loc><priority>0.3</priority></url>
+  <url><loc>https://www.joesbakery.in/terms-and-conditions</loc><priority>0.3</priority></url>
 
   <!-- Category landing pages -->
-  <url><loc>https://www.example.com/category/all</loc></url>
-  <url><loc>https://www.example.com/category/cake</loc></url>
-  <url><loc>https://www.example.com/category/cup_cake</loc></url>
-  <url><loc>https://www.example.com/category/brownie</loc></url>
-  <url><loc>https://www.example.com/category/cookie</loc></url>
-  <url><loc>https://www.example.com/category/teacake</loc></url>
-  <url><loc>https://www.example.com/category/healthy</loc></url>
-  <url><loc>https://www.example.com/category/classic</loc></url>
-  <url><loc>https://www.example.com/category/new</loc></url>
+  <url><loc>https://www.joesbakery.in/category/all</loc></url>
+  <url><loc>https://www.joesbakery.in/category/cake</loc></url>
+  <url><loc>https://www.joesbakery.in/category/cup_cake</loc></url>
+  <url><loc>https://www.joesbakery.in/category/brownie</loc></url>
+  <url><loc>https://www.joesbakery.in/category/cookie</loc></url>
+  <url><loc>https://www.joesbakery.in/category/teacake</loc></url>
+  <url><loc>https://www.joesbakery.in/category/healthy</loc></url>
+  <url><loc>https://www.joesbakery.in/category/classic</loc></url>
+  <url><loc>https://www.joesbakery.in/category/new</loc></url>
 
   <!-- SEO Guide pages -->
-  <url><loc>https://www.example.com/guide/best-cakes-in-bengaluru</loc><priority>0.9</priority></url>
-  <url><loc>https://www.example.com/guide/best-cup-cakes-in-bengaluru</loc><priority>0.9</priority></url>
-  <url><loc>https://www.example.com/guide/best-diwali-gifts-in-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/best-cakes-in-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/best-cup-cakes-in-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/best-diwali-gifts-in-bengaluru</loc><priority>0.9</priority></url>
 
-  <!-- Product detail pages (static list from productData.js) -->
-  <url><loc>https://www.example.com/favorites/new-york-cheesecake</loc></url>
-  <url><loc>https://www.example.com/favorites/dessert-chocolate-fudge</loc></url>
-  <url><loc>https://www.example.com/favorites/burley-cookie</loc></url>
-  <url><loc>https://www.example.com/favorites/oreo-cookie</loc></url>
-  <url><loc>https://www.example.com/favorites/millet-cookie</loc></url>
-  <url><loc>https://www.example.com/favorites/chocolate-cup-cake</loc></url>
-  <url><loc>https://www.example.com/favorites/vanilla-teacake</loc></url>
-  <url><loc>https://www.example.com/favorites/walnut-brownie</loc></url>
-  <url><loc>https://www.example.com/favorites/healthy-granola-bars</loc></url>
+  <!-- NEW SEO COLLECTIONS -->
+  <url><loc>https://www.joesbakery.in/guide/eggless-cakes-delivery-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/gourmet-mousse-cakes-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/fudgy-brownies-and-cookies-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/premium-cheesecakes-delivery-bengaluru</loc><priority>0.9</priority></url>
+  <url><loc>https://www.joesbakery.in/guide/classic-tea-cakes-and-loaves-bengaluru</loc><priority>0.9</priority></url>
+
+  <!-- Product detail pages -->
+  <url><loc>https://www.joesbakery.in/product/upside-down-plum-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/dark-chocolate-hazelnut-cookie</loc></url>
+  <url><loc>https://www.joesbakery.in/product/joes-classic-lotus-biscoffe-cookie</loc></url>
+  <url><loc>https://www.joesbakery.in/product/double-chocolate-cranberry-cookie</loc></url>
+  <url><loc>https://www.joesbakery.in/product/classic-cookies-box-6-in-the-box</loc></url>
+  <url><loc>https://www.joesbakery.in/product/chocolate-bliss-birthday-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/joes-classic-fudgy-brownies</loc></url>
+  <url><loc>https://www.joesbakery.in/product/millet-brownie-guilt-free</loc></url>
+  <url><loc>https://www.joesbakery.in/product/joes-og-vanilla-loaf</loc></url>
+  <url><loc>https://www.joesbakery.in/product/white-chocolate-mousse-anniversary-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/lavender-lemon-swirl-cupcakes</loc></url>
+  <url><loc>https://www.joesbakery.in/product/friends-signature-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/celebratory-baby-shower-cupcakes</loc></url>
+  <url><loc>https://www.joesbakery.in/product/romantic-ruffles-anniversary-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/customized-aiburobhaat-chocolate-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/customized-doraemon-fun-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/heart-shaped-strawberry-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/hustle-mode-customized-2-tier-chocolate-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/joes-classic-chocolate-muffin</loc></url>
+  <url><loc>https://www.joesbakery.in/product/customized-cupcakes-6-in-the-box</loc></url>
+  <url><loc>https://www.joesbakery.in/product/free-fire-battle-royale-birthday-cake</loc></url>
+  <url><loc>https://www.joesbakery.in/product/joes-og-chocolate-cake</loc></url>
 </urlset>
