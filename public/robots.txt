@@ -1,3 +1,13 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+# Block internal/admin & API endpoints
+Disallow: /admin/
+Disallow: /admin
+Disallow: /api/
+Disallow: /api
+
+# Allow everything else
+Allow: /
+
+# If you have staging environments, add: User-agent: * Disallow: / (on staging build)
+
+Sitemap: https://www.example.com/sitemap.xml

@@ -13,6 +13,7 @@ import Contact from "./pages/ContactPage/Contact";
 import BestSellersPage from "./pages/BestSellersPage/BestSellersPage";
 import PrivacyPolicy from "./pages/Legal/PrivacyPolicy";
 import TermsAndConditions from "./pages/Legal/TermsAndConditions";
+import SEOCollectionPage from "./pages/SEOCollectionPage/SEOCollectionPage";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -61,6 +62,8 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/terms" element={<TermsAndConditions />} />
+          {/* SEO Curated Guides */}
+          <Route path="/guide/:seoSlug" element={<SEOCollectionPage products={products} />} />
         </Routes>
         <Footer />
       </Router>

@@ -16,6 +16,7 @@ const quickLinks = [
   { label: "Cookies", href: "/category/cookie" },
   { label: "Teacakes", href: "/category/teacake" },
   { label: "Best Sellers", href: "/best-sellers" },
+  { label: "Best Cakes in Bengaluru", href: "/guide/best-cakes-in-bengaluru" },
   { label: "Contact Us", href: "/contact" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms-and-conditions" },
